@@ -1,0 +1,7 @@
+*.exe       binary
+*.pdb       binary
+*.obj       binary
+*.textures  binary
+*.meshes    binary
+*.ply       binary
+*.profile   binary

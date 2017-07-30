@@ -1,0 +1,143 @@
+DONE:
+#2017.02.08-09 mi-do tagt-nacht
+ initial impl of graph tool
+  -graph.cpp mostly copied from opengl/opengl.cpp, renderer.h written from with some pasting from opengl/reloadable.cpp
+ 
+ got quads disaplayed
+ 
+ added export of profiling block data from opengl project into test.profile
+ 
+ import of data and simple bar graph of imported data
+ 
+ implemented some click-and-drag and right-click-and-drag-to-scale functionality
+ made click-and-drag and right-click-and-drag-to-scale more correct
+ 
+ implement mousewheel scaling
+ 
+ exporting of nested blocks to dissplay flame graph
+ -> flame graph working!
+ 
+ MOAR PROFILING!
+ 
+ make graph coords start on left side of window, and zoom around the mouse cursor
+ 
+ text rendering
+ -> made texture with all chars from 0-127 and made non printable chars a box with X in it
+ -> loaded that texture as greyscale 8-bit bmp
+ -> drawing every char for every bar after drawing the bars in seperate shader by passing bar info +char code +char indx in string
+     shader calculates quad pos and uv chars over 127 get the box from char#0 by setting uv to zero in conditional
+ 
+ text blending with alpha blending
+ 
+#2017.02.13 mo abend
+ 
+ normal ('free') text drawing
+ 
+ turned print("blah ", 5, " foo", nl)  into  print("blah % foo\n", 5)
+ 
+ optimized string drawing by turning every line of text into one drawcall, instead of one drawcall per char
+  -> old dt: ~100ms (all bars, default view, 500 bar strings)
+  -> new dt: ~51ms (all bars, default view, 500 bar strings) not drawing text is 50ms dt, so text drawing is now very cheap?
+ 
+ experimented with driver forced AA and my own manual AA for the bar x dimension
+ -> proper subpixel accurate bars give a lot more detail, so having that working properly would be great
+https://www.youtube.com/watch?v=Rq3PYO0TrjE 
+#2017.02.15 mi tag
+ 
+ implemented instancing for bars
+ -> works! rendering all bars with 1 drawcall, with ~10k bars at the moment no GPU or CPU load at all.
+ 
+ test manual subpixel blending
+ 
+ implemented subpixel blending for the bars
+ -> works! looks roughly equivalent to driver forced 8x AA, but more correct in some edge cases (like zooming all the way out for ex.)
+ 
+ implemented background color with subpixel blending by accumulating with alpha
+ 
+#2017.02.17 fr abend-nacht
+ 
+ now passing string data for free text with buffer texture, instead of UBO vec4 array hack
+ 
+ text drawing for bars with instancing
+ -string table as buffer texture (aka. uniform array)
+ -pass string offs and length in VBO as vertex attrib
+ -render text as seperate pass
+ 
+ round corners of bars
+ -> at least a little bit
+ 
+ add profiling for the loader thread, and maybe even the input thread
+ -put everyting in one output file, multithreading requires one buffer buf-cursor and depth for each thread
+ 
+ multithreading implemented on the profilee side
+ 
+#2017.02.19 so tag
+ 
+ vertical bar 'selection' on lmb click
+ -additional bar at zero
+ -bars show their time position
+ 
+ added a block type flags field
+ -calls like SleepCondVar and SwapBuffers(with vsync) wait for something async to happen, these appear as thinner bars and are grey
+ 
+ added profiling for the windows mgs thread
+ 
+#2017.02.21 di tag
+ 
+ <ratchetfreak> said that having a lot of VAOs isn't bad so
+  improve multithreading by spliting the thread data into seperate VBOs so that each can be drawn with a seperate drawcall and can have different uniform data
+  -> done, it should now be easy to seperate the frames into VBOs from the opengl side
+ 
+#2017.02.26 so tag
+ 
+ add time span measurement
+ 
+#2017.07.12 mi abend
+ graph, added different unit scales per thread, to support gpu scale
+ 
+#2017.07.17 mo tag
+ fixed? a bug that caused the digits after decimal_point to not be disaplayed as 0 in the instanced duration text print shader
+ -> unfortunately i have no idea how i fixed it, it just statrted working without me noticing
+ 
+TODO
+-FEATURES:
+ 
+ add selecting of bars
+ 
+ float precision issues already show up when zoomed in at uncontended mutex scales when away from the origin by a second
+ -should probably turn time units into u64 for bar pos/len and u64+float fract for view/selection/etc. coords
+ 
+ add time scale reference at the bottom or top (black-white stripes that are 1 sec/ms/us/ns long) as scale reference
+ -somehow fade between the scales (scaling in at 1 sec scale fades in the marks for ms)
+ 
+ somehow add _rdtsc to the profiling data
+ -the _rdtsc freq has to be matched to the QPC freq
+ -even with matched frequencies there might still be differences between the two
+  -maybe match the freqs every frame (frame length in QPC vs in _rdtsc) (offset the rdtsc values from beginnin of frame QPC time)
+ -maybe only use it for the length of the bars?
+ -maybe display a second set of bars (with matching colors) below
+ -if rdtsc never deviates from the QPC in practice, maybe don't switch entirely to rdtsc
+  -have a fallback for QPC in the graph app in case
+ 
+ does it make sense (and is it reasonably possible) to convert float/int QPC timestamps to time+unit in shaders
+  -if not what is the alternative?
+ 
+ it would be nice to have a way to pass and display additional information for the bars
+ -frame number for frame
+ -enum name for wnd_proc
+ 
+ should probably not overwrite our profiling data
+ -create a folder and give the profiling files names with timestamps
+ -should the graph tool automaticly load the lastest data?
+ -data file selection with text gui?
+ 
+ streaming the data while the profilee is running
+ -should probably 'stream' after every frame
+ -since sharing files probably never works like we want it to, stream to file but also send the frame chunks over a pipe to the graph tool if it exists
+ -make the stream-after-every-frame profile itself
+ -to update the streamed frames in realtime we probably should put the data for every frame in a seperate VBO since VBO can't be resized
+  -this would also allow an easy way of culling the data so we only need to dissplay the frames that are on screen
+  -this requires some sort of concept of a frame and it's time pos and duration
+  -bar pos should probably be relative to frame begin
+ 
+-BUGS:
