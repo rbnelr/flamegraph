@@ -25,7 +25,7 @@ DONE:
  -> made texture with all chars from 0-127 and made non printable chars a box with X in it
  -> loaded that texture as greyscale 8-bit bmp
  -> drawing every char for every bar after drawing the bars in seperate shader by passing bar info +char code +char indx in string
-     shader calculates quad pos and uv chars over 127 get the box from char#0 by setting uv to zero in conditional
+	 shader calculates quad pos and uv chars over 127 get the box from char#0 by setting uv to zero in conditional
  
  text blending with alpha blending
  
@@ -33,7 +33,7 @@ DONE:
  
  normal ('free') text drawing
  
- turned print("blah ", 5, " foo", nl)  into  print("blah % foo\n", 5)
+ turned print("blah ", 5, " foo", nl)  into	 print("blah % foo\n", 5)
  
  optimized string drawing by turning every line of text into one drawcall, instead of one drawcall per char
   -> old dt: ~100ms (all bars, default view, 500 bar strings)
@@ -98,6 +98,9 @@ https://www.youtube.com/watch?v=Rq3PYO0TrjE
 #2017.07.17 mo tag
  fixed? a bug that caused the digits after decimal_point to not be disaplayed as 0 in the instanced duration text print shader
  -> unfortunately i have no idea how i fixed it, it just statrted working without me noticing
+ 
+#2017.07.30 so nacht
+ implemented parsing of new event profiling data into tree structure
  
 TODO
 -FEATURES:

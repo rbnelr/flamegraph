@@ -16,20 +16,20 @@
 
 #define UINT _UINT
 
-// Without WIN32_LEAN_AND_MEAN: ogl.cpp preprocessed:   4,149,355 bytes; 299056 lines
-// With WIN32_LEAN_AND_MEAN: ogl.cpp preprocessed:      2,846,833 bytes; 194215 lines
+// Without WIN32_LEAN_AND_MEAN: ogl.cpp preprocessed:	4,149,355 bytes; 299056 lines
+// With WIN32_LEAN_AND_MEAN: ogl.cpp preprocessed:		2,846,833 bytes; 194215 lines
 #define WIN32_LEAN_AND_MEAN 1
 
 #if _COMP == _COMP_MSVC
-    WARNINGS_PUSH
-    
-    WARNING_DISABLE(4005) // macro redefinition
+	WARNINGS_PUSH
+	
+	WARNING_DISABLE(4005) // macro redefinition
 #endif
 
 #include "windows.h"
 
 #if _COMP == _COMP_MSVC
-    WARNINGS_POP
+	WARNINGS_POP
 #endif
 
 #undef UINT
@@ -55,9 +55,9 @@
 #undef UINT
 #undef ULONG
 
-typedef short           WIN_H_SHORT;
-typedef int             WIN_H_INT;
-typedef long            WIN_H_LONG;
-typedef unsigned short  WIN_H_USHORT;
-typedef unsigned int    WIN_H_UINT;
-typedef unsigned long   WIN_H_ULONG;
+typedef short			WIN_H_SHORT;
+typedef int				WIN_H_INT;
+typedef long			WIN_H_LONG;
+typedef unsigned short	WIN_H_USHORT;
+typedef unsigned int	WIN_H_UINT;
+typedef unsigned long	WIN_H_ULONG;
