@@ -35,12 +35,14 @@ struct array {
 	}
 	#endif
 	
+	#if 0
 	template <typename F>
 	void templ_forall (F func) const {
 		for (LEN_T i=0; i<len; ++i) {
 			func(arr[i]);
 		}
 	}
+	#endif
 	
 };
 
@@ -207,9 +209,8 @@ struct dynarr : public array<T, LEN_T> { // 'this->' everywhere to fix 'lookup i
 		return out;
 	}
 	
-	#if 0
-	DECLM T& push () {
-		return append();
+	DECLM T& push (T cr val) {
+		return append(val);
 	}
 	DECLM void pop () {
 		#if DYNARR_RANGE_CHECK
@@ -217,6 +218,5 @@ struct dynarr : public array<T, LEN_T> { // 'this->' everywhere to fix 'lookup i
 		#endif
 		grow_to(len -1);
 	}
-	#endif
 	
 };

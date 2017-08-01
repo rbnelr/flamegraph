@@ -264,7 +264,13 @@ namespace str {
 		char*		str;
 		u32			len;
 		
+		constexpr mlstr (char* str, u32 len):	str{str}, len{len} {}
+		
 		constexpr static mlstr null () { return {nullptr, 0}; }
+		
+		static mlstr count_cstr (char* str) {
+			return mlstr(str, str::len(str));
+		}
 		
 		constexpr operator bool () const { // Check if null
 			return str != nullptr;
@@ -275,18 +281,18 @@ namespace str {
 		u32			len;
 		
 		lstr () {}
-		constexpr lstr (char const* cstr, u32 len):	str{cstr}, len{len} {}
+		constexpr lstr (char const* str, u32 len):	str{str}, len{len} {}
 		constexpr lstr (mlstr s):					str{s.str}, len{s.len} {}
+		
+		constexpr static lstr null () { return {nullptr, 0}; }
 		
 		template <u32 LEN>
 		constexpr lstr (char const (& lit)[LEN]):	str{lit}, len{LEN -1} {
 			STATIC_ASSERT(LEN > 0);
 		}
 		
-		constexpr static lstr null () { return {nullptr, 0}; }
-		
-		static lstr count_cstr (char const* cstr) {
-			return lstr(cstr, str::len(cstr));
+		static lstr count_cstr (char const* str) {
+			return lstr(str, str::len(str));
 		}
 		
 		constexpr operator bool () const { // Check if null

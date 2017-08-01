@@ -23,7 +23,7 @@ rem		rem
 	
 	set froot=%~dp0
 	set fCproj=!CPROJ!
-	set fsrc=!f_root!src/
+	set fsrc=!froot!src/
 	
 	set func=vs
 	if not [%1] == []		set func=%1
@@ -52,7 +52,7 @@ rem /main
 	if [!release!] == [0] (
 		set dbg=/Od /Oi /Zi /DEBUG /DDEBUG=1
 	) else	(
-		set dbg=/O2 /Oi /Zi /DEBUG /DDEBUG=0
+		set dbg=/O2 /O0 /Zi /DEBUG /DDEBUG=0
 	)
 	
 	set warn=/wd4577
@@ -68,9 +68,9 @@ rem /main
 rem /a
 
 :disasm
-	dumpbin /ALL /DISASM /SYMBOLS /out:!f_root!!project!.exe.asm.tmp !f_root!!project!.exe
-	undname !f_root!!project!.exe.asm.tmp > !f_root!!project!.exe.asm
-	del !f_root!!project!.exe.asm.tmp
+	dumpbin /ALL /DISASM /SYMBOLS /out:!froot!!project!.exe.asm.tmp !froot!!project!.exe
+	undname !froot!!project!.exe.asm.tmp > !froot!!project!.exe.asm
+	del !froot!!project!.exe.asm.tmp
 	
 	rem dumpbin /ALL /DISASM /SYMBOLS /out:!froot!!project!.exe.asm !froot!!project!.exe
 	
@@ -78,7 +78,8 @@ rem /a
 rem /a
 
 :dbg
-	devenv !f_root!!project!.exe
+	echo devenv !froot!!project!.exe
+	devenv !froot!!project!.exe
 	exit /b
 rem /a
 

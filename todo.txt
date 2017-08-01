@@ -105,6 +105,10 @@ https://www.youtube.com/watch?v=Rq3PYO0TrjE
 TODO
 -FEATURES:
  
+ display newly parsed block tree
+ stream the data (is some way)
+ stream the data and automaticly set the view position and size
+ 
  add selecting of bars
  
  float precision issues already show up when zoomed in at uncontended mutex scales when away from the origin by a second
