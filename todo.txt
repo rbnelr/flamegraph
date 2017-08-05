@@ -115,6 +115,15 @@ TODO
 -FEATURES:
  
  stream the data (somehow)
+ -stream the chunks from the engine via pipe (and still into file)
+ -recieve the chunks in the flamegraph app and stream them in the same way as currently
+ -flamegraph app gets started first, sets up a named pipe and waits for a connection
+ -engine sends the header with thread and thread clock freq information
+ -then stream the data in chunks over the pipe
+  -this probably needs to be in a asyncronous way to allow interactivity
+ -since the graph even with 60k blocks seems to render in <2ms we probably want to disable vsync and render at a very fast rate,
+   so that the profiling data can be seen as low-latency and accurate as possible
+ 
  stream the data and automaticly set the view position and size
  
  add selecting of bars

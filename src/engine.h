@@ -1835,7 +1835,9 @@ void init () {
 	}
 	
 	{
-		auto ret = wglSwapIntervalEXT(1);
+		bool vsync_on = 1;
+		
+		auto ret = wglSwapIntervalEXT(vsync_on ? -1 : 0);
 		assert(ret != FALSE);
 	}
 	
