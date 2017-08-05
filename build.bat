@@ -52,7 +52,7 @@ rem /main
 	if [!release!] == [0] (
 		set dbg=/Od /Oi /Zi /DEBUG /DDEBUG=1
 	) else	(
-		set dbg=/O2 /O0 /Zi /DEBUG /DDEBUG=0
+		set dbg=/O2 /Oi /Zi /DEBUG /DDEBUG=0
 	)
 	
 	set warn=/wd4577

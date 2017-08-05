@@ -1234,6 +1234,7 @@ namespace platform {
 			case WM_CLOSE: {
 				msg_thread_close_application();
 				PostQuitMessage(0);
+				return 0;
 			}
 			
 			case WM_SIZE: {
@@ -1261,7 +1262,7 @@ namespace platform {
 				
 				if (wParam != SIZE_MINIMIZED) {
 					if (w <= 0 || h <= 0) {
-						warning("windowProc::WM_SIZE: w <= 0 || h <= 0, window closed?");
+						warning("windowProc::WM_SIZE: w <= 0 || h <= 0");
 						return 0;
 					}
 				}

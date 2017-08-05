@@ -1482,6 +1482,11 @@ namespace bmp {
 			auto* closee = &tree_storage[closee_i];
 			assert(closee_i != 0 && cur_level > 0); // step() without prior open()
 			
+			assert(prev_stk.len <= cur_level +2);
+			if (prev_stk.len > cur_level +1) {
+				prev_stk.pop();
+			}
+			
 			closee->length = ts -closee->begin;
 			
 			assert(str::comp(name, closee->name));
@@ -1511,14 +1516,14 @@ namespace bmp {
 		}
 		
 		template <typename FUNC>
-		void _depth_first (FUNC f, u32 i,Node& n, u32 depth) {
+		void _depth_first (FUNC f, Node& n, u32 depth) {
 			
-			f(n, i,depth);
+			f(n, depth);
 			
 			u32 c = n.children;
 			while (c != 0) {
 				auto& node = tree_storage[c];
-				_depth_first(f, c,node, depth +1);
+				_depth_first(f, node, depth +1);
 				
 				c = node.next;
 			}
@@ -1529,7 +1534,7 @@ namespace bmp {
 			u32 c = tree_storage[0].children;
 			while (c != 0) {
 				auto& node = tree_storage[c];
-				_depth_first(f, c,node, 0);
+				_depth_first(f, node, 0);
 				
 				c = node.next;
 			}
@@ -1750,12 +1755,12 @@ void load_and_process_file () {
 		auto* data = working_stk.pushArr<std140_Bar>(count);
 		u32 i = 0;
 		
-		auto add_block = [&] (Node cr n, u32 j, u32 depth) {
+		auto add_block = [&] (Node& n, u32 depth) {
 			assert(i < count, "% %", i, count);
 			
-			#if 1
-			print("%(%) % %:%:%	% % %\n", repeat("  ", depth), i, j, n.begin, n.length, depth, n.name, n.index, (u32)n.flags);
-			Sleep(0);
+			#if 0
+			print("%(%) %:%:%	% % %\n", repeat("  ", depth), i, n.begin, n.length, depth, n.name, n.index, (u32)n.flags);
+			//Sleep(0);
 			#endif
 			
 			data[i] = {}; // zero potential padding
@@ -1937,12 +1942,12 @@ GLint get_thread_bars_offs (u32 thread_i) {
 	
 GLsizei gl_thread_bars_draw_prep (u32 thread_i) {
 	
-	#if 0
-	glBindVertexArray(graph_thread_VAOs[thread_i]);
+	#if 1
+	glBindVertexArray(threads[thread_i].VAO);
 	
 	{
 		std140::float_ temp;
-		temp.set(graph_file_threads[thread_i].sec_per_unit);
+		temp.set(threads[thread_i].unit_to_sec);
 		
 		glBufferSubData(GL_UNIFORM_BUFFER,
 						offsetof(std140_Global, units_counter_to_sec),
@@ -1956,10 +1961,7 @@ GLsizei gl_thread_bars_draw_prep (u32 thread_i) {
 					sizeof temp, &temp);
 	}
 	
-	using namespace flamegraph_data_file;
-	auto* threads = (Thread*)(load::f_header +1);
-	
-	return safe_cast_assert(GLsizei, threads[thread_i].block_count);
+	return safe_cast_assert(GLsizei, threads[thread_i].get_block_count());
 	#else
 	return 0;
 	#endif
