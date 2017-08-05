@@ -142,8 +142,8 @@ namespace vec {
 		
 		constexpr tv2 () = default;
 		
-		constexpr explicit tv2 (T all):					x{all}, y{all} {}
-		constexpr explicit tv2 (T x_, T y_):			x{x_},	y{y_} {}
+		constexpr tv2 (T all):				x{all}, y{all} {}
+		constexpr tv2 (T x_, T y_):			x{x_},	y{y_} {}
 		
 		constexpr T operator[] (uptr indx) const {
 			return *(&x +indx);
@@ -173,10 +173,10 @@ namespace vec {
 		
 		constexpr tv3 () = default;
 		
-		constexpr explicit tv3 (T all):					x{all}, y{all}, z{all} {}
-		constexpr explicit tv3 (T x_, T y_, T z_):		x{x_},	y{y_},	z{z_} {}
+		constexpr tv3 (T all):					x{all}, y{all}, z{all} {}
+		constexpr tv3 (T x_, T y_, T z_):		x{x_},	y{y_},	z{z_} {}
 		
-		constexpr explicit tv3 (tv2<T> vp v, T z_):		x{v.x}, y{v.y}, z{z_} {}
+		constexpr tv3 (tv2<T> vp v, T z_):		x{v.x}, y{v.y}, z{z_} {}
 		
 		constexpr T operator[] (uptr indx) const {
 			return *(&x +indx);
@@ -207,11 +207,11 @@ namespace vec {
 		
 		constexpr tv4 () = default;
 		
-		constexpr explicit tv4 (T all):						x{all}, y{all}, z{all}, w{all} {}
-		constexpr explicit tv4 (T x_, T y_, T z_, T w_):	x{x_},	y{y_},	z{z_},	w{w_} {}
+		constexpr tv4 (T all):						x{all}, y{all}, z{all}, w{all} {}
+		constexpr tv4 (T x_, T y_, T z_, T w_):		x{x_},	y{y_},	z{z_},	w{w_} {}
 		
-		constexpr explicit tv4 (tv2<T> vp v, T z_, T w_):	x{v.x}, y{v.y}, z{z_},	w{w_} {}
-		constexpr explicit tv4 (tv3<T> vp v, T w_):			x{v.x}, y{v.y}, z{v.z}, w{w_} {}
+		constexpr tv4 (tv2<T> vp v, T z_, T w_):	x{v.x}, y{v.y}, z{z_},	w{w_} {}
+		constexpr tv4 (tv3<T> vp v, T w_):			x{v.x}, y{v.y}, z{v.z}, w{w_} {}
 		
 		constexpr T operator[] (uptr indx) const {
 			return *(&x +indx);
@@ -245,10 +245,10 @@ namespace vec {
 		
 		constexpr thv () = default;
 		
-		constexpr explicit thv (T all):						x{all}, y{all}, z{all} {}
-		constexpr explicit thv (T x_, T y_, T z_):			x{x_},	y{y_},	z{z_} {}
+		constexpr thv (T all):						x{all}, y{all}, z{all} {}
+		constexpr thv (T x_, T y_, T z_):			x{x_},	y{y_},	z{z_} {}
 		
-		constexpr explicit thv (tv3<T> vp v):				x{v.x}, y{v.y}, z{v.z} {}
+		constexpr thv (tv3<T> vp v):				x{v.x}, y{v.y}, z{v.z} {}
 		
 		constexpr T operator[] (uptr indx) const {
 			return *(&x +indx);
@@ -1709,7 +1709,7 @@ namespace quat_ {
 			return tquat(tv3<T>(0), 1);
 		}
 		
-		constexpr explicit tquat (tv3<T> vp v, T w_):	x{v.x}, y{v.y}, z{v.z}, w{w_} {}
+		constexpr tquat (tv3<T> vp v, T w_):	x{v.x}, y{v.y}, z{v.z}, w{w_} {}
 		
 		constexpr tv4<T> xyzw () const {
 			return tv4<T>(x, y, z, w); 

@@ -1329,28 +1329,17 @@ DECLD GLuint					textures[TEX_COUNT];
 
 #include "flamegraph_data_file.h"
 
-struct Node {
+struct Block {
 	u32					parent;
 	u32					children;
 	u32					next;
 	
 	u64					begin;
 	u64					length;
+	block_type_flags_e	flags;
+	u32					depth;
 	lstr				name;
 	u32					index;
-	block_type_flags_e	flags;
-	
-	void init_root () {
-		parent =	0;
-		children =	0;
-		next =		0;
-		
-		begin =		0;
-		length =	-1;
-		name =		"<root>";
-		index =		0;
-		flags =		BT_NONE;
-	}
 	
 };
 
@@ -1428,49 +1417,59 @@ struct Thread {
 	//dynarr<Gl_Buf>		gl_bufs;
 	Gl_Buf				gl_buf;
 	
-	dynarr<Node>		tree_storage;
+	u32					buffered_count;
+	
+	dynarr<Block>		blocks;
 	dynarr<u32>			prev_stk;
 	u32					cur_level;
 	
-	u32 get_block_count () const {
-		return tree_storage.len -1;
+	void init (lstr name_, f32 sec_per_unit) {
+		unit_to_sec = sec_per_unit;
+		sec_to_unit = 1.0f / unit_to_sec;
+		
+		name = name_;
+		
+		buffered_count = 0;
+		
+		blocks.init(BLOCKS_DYNARR_CAP);
+		prev_stk.init(LEVELS_DYNARR_CAP);
+		
+		cur_level = -1;
 	}
 	
 	void open (lstr name, u32 index, u64 ts) {
-		auto n_i = tree_storage.len;
-		auto* n = &tree_storage.append();
+		auto n_i = blocks.len;
+		auto* n = &blocks.append();
 		
-		auto paren_i = prev_stk[cur_level];
-		auto* paren = &tree_storage[paren_i];
-		
-		if (paren->children == 0) {
-			paren->children = n_i;
+		n->parent =			-1;
+		if (cur_level != -1) {
+			u32 paren_i = prev_stk[cur_level];
+			auto* paren = &blocks[paren_i];
+			
+			if (paren->children == -1) {
+				paren->children = n_i;
+			}
+			
+			n->parent =		paren_i;
 		}
 		
-		n->parent =			paren_i;
-		n->children =		0;
-		#if DEBUG
+		n->children =		-1;
 		n->next =			-1;
-		#endif
 		
 		if (prev_stk.len == ++cur_level) {
-			prev_stk.push(0); // no prev exists
+			prev_stk.append(); // no prev exists
 		} else {
-			
 			auto prev_i = prev_stk[cur_level];
-			if (prev_i != 0) {
-				auto* prev = &tree_storage[prev_i];
-				
-				prev->next =	n_i;
-			}
+			auto* prev = &blocks[prev_i];
+			
+			prev->next =	n_i;
 		}
 		prev_stk[cur_level] = n_i;
 		
 		
 		n->begin =			ts;
-		#if DEBUG
 		n->length =			-1;
-		#endif
+		n->depth =			cur_level;
 		
 		n->index =			index;
 		
@@ -1484,19 +1483,20 @@ struct Thread {
 		
 	}
 	void close (lstr name, u32 index, u64 ts) {
+		assert(cur_level != -1 && prev_stk.len > cur_level); // close() without prior open()
 		auto me_i = prev_stk[cur_level];
-		auto* me = &tree_storage[me_i];
-		assert(me_i != 0 && cur_level > 0); // close() without prior open()
+		auto* me = &blocks[me_i];
 		
-		assert(prev_stk.len <= cur_level +2);
-		if (prev_stk.len > cur_level +1) {
+		assert(	prev_stk.len == cur_level +1 ||
+				prev_stk.len == cur_level +2);
+		if (prev_stk.len == cur_level +2) {
 			prev_stk.pop();
 		}
 		
 		--cur_level;
 		
 		me->length = ts -me->begin;
-		me->next = 0;
+		assert(me->next == -1);
 		
 		{
 			lstr remain_name;
@@ -1513,15 +1513,16 @@ struct Thread {
 		
 	}
 	void step (lstr name, u32 index, u64 ts) {
-		auto n_i = tree_storage.len;
-		auto* n = &tree_storage.append();
+		auto n_i = blocks.len;
+		auto* n = &blocks.append();
 		
+		assert(cur_level != -1 && prev_stk.len > cur_level); // step() without prior open()
 		auto closee_i = prev_stk[cur_level];
-		auto* closee = &tree_storage[closee_i];
-		assert(closee_i != 0 && cur_level > 0); // step() without prior open()
+		auto* closee = &blocks[closee_i];
 		
-		assert(prev_stk.len <= cur_level +2);
-		if (prev_stk.len > cur_level +1) {
+		assert(	prev_stk.len == cur_level +1 ||
+				prev_stk.len == cur_level +2);
+		if (prev_stk.len == cur_level +2) {
 			prev_stk.pop();
 		}
 		
@@ -1529,32 +1530,34 @@ struct Thread {
 		
 		assert(str::comp(name, closee->name));
 		
+		n->parent =			-1;
+		if (cur_level > 0) {
+			u32 paren_i = prev_stk[cur_level -1];
+			auto* paren = &blocks[paren_i];
+			
+			assert(paren->children != -1); // step() can never come before open, so parent can never have us as first child
+			
+			n->parent =		paren_i;
+		}
 		
-		auto paren_i = prev_stk[cur_level -1];
-		
-		n->parent =			paren_i;
-		n->children =		0;
-		#if DEBUG
+		n->children =		-1;
 		n->next =			-1;
-		#endif
 		
 		closee->next =		n_i;
 		prev_stk[cur_level] = n_i;
 		
-		
 		n->begin =			ts;
-		#if DEBUG
 		n->length =			-1;
-		#endif
-		
+		n->flags =			closee->flags;
+		n->depth =			cur_level;
 		n->name =			closee->name;
 		n->index =			index;
-		n->flags =			closee->flags;
 		
 	}
 	
+	#if 0
 	template <typename FUNC>
-	void _depth_first (FUNC f, Node& n, u32 depth) {
+	void _depth_first (FUNC f, Block& n, u32 depth) {
 		
 		f(n, depth);
 		
@@ -1577,14 +1580,13 @@ struct Thread {
 			c = node.next;
 		}
 	}
+	#endif
 	
 };
 
 dynarr<Thread>	threads;
 array<char>		blocks_str_storage; // on working_stk
 dynarr<lstr>	blocks_strs;
-
-u32				total_block_count;
 
 lstr add_str (lstr s) {
 	for (u32 i=0; i<blocks_strs.len; ++i) {
@@ -1595,208 +1597,206 @@ lstr add_str (lstr s) {
 	return ret;
 }
 
-void load_file_and_build_trees () {
-	namespace f = flamegraph_data_file;
-	
-	Mem_Block	data;
-	assert(!platform::read_whole_file_onto(&working_stk, input_filename, 0, &data));
-	
-	assert(data.size >= sizeof(f::File_Header));
-	f::File_Header* f_header = (f::File_Header*)data.ptr;
-	
-	assert(f_header->id.i == f::FILE_ID.i);
-	assert(f_header->file_size == data.size);
-	
-	print("File_Header: file_size %	 total_event_count %  thread_count %  chunks_count %\n",
-				f_header->file_size,
-				f_header->total_event_count,
-				f_header->thread_count,
-				f_header->chunks_count );
-	
-	f::Thread*	f_threads = (f::Thread*)(f_header +1);
-	
-	char*		f_thr_str_tbl = (char*)(f_threads +f_header->thread_count);
-	
-	threads.init(THREADS_DYNARR_CAP);
-	
-	u32 threads_event_counter = 0;
-	
-	for (u32 i=0; i<f_header->thread_count; ++i) {
-		lstr name = f::get_thread_name(i, f_header, f_threads, f_thr_str_tbl);
-		
-		#if 0
-		print("Thread % '%': sec_per_unit %	 units_per_sec %  event_count %\n",
-				i, name,
-				f_threads[i].sec_per_unit, 1.0f / f_threads[i].sec_per_unit,
-				f_threads[i].event_count );
-		#endif
-		
-		threads_event_counter += f_threads[i].event_count;
-		
-		auto* thr = &threads.append();
-		
-		thr->unit_to_sec = f_threads[i].sec_per_unit;
-		thr->sec_to_unit = 1.0f / thr->unit_to_sec;
-		
-		thr->name = name;
-		
-		
-		thr->tree_storage.init(1, BLOCKS_DYNARR_CAP);
-		thr->prev_stk.init(1, LEVELS_DYNARR_CAP);
-		
-		thr->tree_storage[0].init_root();
-		thr->prev_stk[0] = 0; // null
-		
-		thr->cur_level = 0;
-	}
-	
-	assert(threads_event_counter == f_header->total_event_count);
-	
-	auto* chunk = (f::Chunk*)(f_thr_str_tbl +f_header->thr_name_str_tbl_size);
-	
-	blocks_str_storage.arr = working_stk.getTop<char>();
-	blocks_str_storage.len = 0;
-	blocks_strs.init(UNIQUE_BLOCKS_DYNARR_CAP);
-	
-	u32 total_events_counter = 0;
-	for (u32 chunk_i=0; chunk_i<f_header->chunks_count; ++chunk_i) {
-		mlstr chunk_name = f::get_chunk_name(chunk);
-		#if 0
-		print("Chunk % '%' %: offs_to_next %  event_count %	 ts_begin %	 ts_length %\n",
-				chunk_i, chunk_name, chunk->index,
-				chunk->offs_to_next,
-				chunk->event_count,
-				chunk->ts_begin,
-				chunk->ts_length );
-		#endif
-		
-		auto* event = f::get_chunk_events(chunk_name);
-		
-		for (u32 i=0; i<chunk->event_count; ++i) {
-			mlstr code_name = f::get_event_name(event);
-			#if 0
-			print("  Event % '%' %: % %\n",
-					i, code_name, event->index,
-					event->thread_indx,
-					event->ts );
-			#endif
-			
-			assert(event->thread_indx < threads.len);
-			auto* thr = &threads[ event->thread_indx ];
-			
-			assert(code_name.str[0] != '\0');
-			
-			char action =				code_name.str[0];
-			lstr name =					lstr(&code_name.str[1], code_name.len -1);
-			
-			switch (action) {
-				case '{':	thr->open(name,		event->index, event->ts);		break;
-				case '}':	thr->close(name,	event->index, event->ts);		break;
-				case '|':	thr->step(name,		event->index, event->ts);		break;
-				default: assert(false, "action : '%'", action);
-			}
-			
-			event = f::get_next_event(code_name);
-		}
-		
-		total_events_counter += chunk->event_count;
-		chunk = ptr_add(chunk, chunk->offs_to_next);
-	}
-	
-	blocks_str_storage.len = safe_cast_assert(u32,
-		ptr_sub(blocks_str_storage.arr, working_stk.getTop<char>()) );
-	
-	assert(total_events_counter == f_header->total_event_count);
-	
-	total_block_count = 0;
-	for (u32 i=0; i<threads.len; ++i) {
-		total_block_count += threads[i].get_block_count();
-	}
-	
-}
+DECLD constexpr tv3<GLubyte> COLS[8] = {
+	{192,  26,	26},
+	{ 26, 192,	26},
+	{ 26,  26, 192},
+	{192, 192,	26},
+	{ 26, 192, 192},
+	{192,  26, 192},
+	{192,  77, 192},
+	{128, 192,	77},
+};
 
 void load_and_process_file () {
 	
-	load_file_and_build_trees();
-	
-	// Upload bars data into VBO
-	for (u32 i=0; i<threads.len; ++i) {
-		glGenBuffers(1, &threads[i].gl_buf.VBO);
-		glGenVertexArrays(1, &threads[i].gl_buf.VAO);
+	u32	total_block_count;
+	{
+		namespace f = flamegraph_data_file;
+		
+		Mem_Block	data;
+		assert(!platform::read_whole_file_onto(&working_stk, input_filename, 0, &data));
+		
+		assert(data.size >= sizeof(f::File_Header));
+		f::File_Header* f_header = (f::File_Header*)data.ptr;
+		
+		assert(f_header->id.i == f::FILE_ID.i);
+		assert(f_header->file_size == data.size);
+		
+		print("File_Header: file_size %	 total_event_count %  thread_count %  chunks_count %\n",
+					f_header->file_size,
+					f_header->total_event_count,
+					f_header->thread_count,
+					f_header->chunks_count );
+		
+		f::Thread*	f_threads = (f::Thread*)(f_header +1);
+		
+		char*		f_thr_str_tbl = (char*)(f_threads +f_header->thread_count);
+		
+		threads.init(THREADS_DYNARR_CAP);
+		
+		u32 threads_event_counter = 0;
+		
+		for (u32 i=0; i<f_header->thread_count; ++i) {
+			lstr name = f::get_thread_name(i, f_header, f_threads, f_thr_str_tbl);
+			
+			#if 0
+			print("Thread % '%': sec_per_unit %	 units_per_sec %  event_count %\n",
+					i, name,
+					f_threads[i].sec_per_unit, 1.0f / f_threads[i].sec_per_unit,
+					f_threads[i].event_count );
+			#endif
+			
+			threads_event_counter += f_threads[i].event_count;
+			
+			auto* thr = &threads.append();
+			thr->init(name, f_threads[i].sec_per_unit);
+		}
+		
+		assert(threads_event_counter == f_header->total_event_count);
+		
+		auto* chunk = (f::Chunk*)(f_thr_str_tbl +f_header->thr_name_str_tbl_size);
+		
+		blocks_str_storage.arr = working_stk.getTop<char>();
+		blocks_str_storage.len = 0;
+		blocks_strs.init(UNIQUE_BLOCKS_DYNARR_CAP);
+		
+		u32 total_events_counter = 0;
+		for (u32 chunk_i=0; chunk_i<f_header->chunks_count; ++chunk_i) {
+			mlstr chunk_name = f::get_chunk_name(chunk);
+			#if 0
+			print("Chunk % '%' %: offs_to_next %  event_count %	 ts_begin %	 ts_length %\n",
+					chunk_i, chunk_name, chunk->index,
+					chunk->offs_to_next,
+					chunk->event_count,
+					chunk->ts_begin,
+					chunk->ts_length );
+			#endif
+			
+			auto* event = f::get_chunk_events(chunk_name);
+			
+			for (u32 i=0; i<chunk->event_count; ++i) {
+				mlstr code_name = f::get_event_name(event);
+				#if 0
+				print("  Event % '%' %: % %\n",
+						i, code_name, event->index,
+						event->thread_indx,
+						event->ts );
+				#endif
+				
+				assert(event->thread_indx < threads.len);
+				auto* thr = &threads[ event->thread_indx ];
+				
+				assert(code_name.str[0] != '\0');
+				
+				char action =				code_name.str[0];
+				lstr name =					lstr(&code_name.str[1], code_name.len -1);
+				
+				switch (action) {
+					case '{':	thr->open(name,		event->index, event->ts);		break;
+					case '}':	thr->close(name,	event->index, event->ts);		break;
+					case '|':	thr->step(name,		event->index, event->ts);		break;
+					default: assert(false, "action : '%'", action);
+				}
+				
+				event = f::get_next_event(code_name);
+			}
+			
+			total_events_counter += chunk->event_count;
+			chunk = ptr_add(chunk, chunk->offs_to_next);
+		}
+		
+		blocks_str_storage.len = safe_cast_assert(u32,
+			ptr_sub(blocks_str_storage.arr, working_stk.getTop<char>()) );
+		
+		assert(total_events_counter == f_header->total_event_count);
+		
+		total_block_count = 0;
+		for (u32 i=0; i<threads.len; ++i) {
+			total_block_count += threads[i].blocks.len;
+		}
+		
 	}
 	
-	constexpr tv3<GLubyte> COLS[8] = {
-		tv3<GLubyte>(192,  26,	26),
-		tv3<GLubyte>( 26, 192,	26),
-		tv3<GLubyte>( 26,  26, 192),
-		tv3<GLubyte>(192, 192,	26),
-		tv3<GLubyte>( 26, 192, 192),
-		tv3<GLubyte>(192,  26, 192),
-		tv3<GLubyte>(192,  77, 192),
-		tv3<GLubyte>(128, 192,	77),
-	};
-	
-	glBindBuffer(GL_TEXTURE_BUFFER, VBOs[VBO_BUF_TEX_BAR_NAME_STR_TBL]);
-	
-	glBufferData(GL_TEXTURE_BUFFER,
-			safe_cast_assert(GLsizeiptr, blocks_str_storage.len), blocks_str_storage.arr, GL_STREAM_DRAW);
-	
-	print("String table size: %\n", blocks_str_storage.len);
-	
-	print("Total blocks: %\n", total_block_count);
-	
-	u32 i = 0;
+	{
+		glBindBuffer(GL_TEXTURE_BUFFER, VBOs[VBO_BUF_TEX_BAR_NAME_STR_TBL]);
+		
+		glBufferData(GL_TEXTURE_BUFFER,
+				safe_cast_assert(GLsizeiptr, blocks_str_storage.len), blocks_str_storage.arr, GL_STREAM_DRAW);
+		print("String table size: %\n", blocks_str_storage.len);
+	}
 	
 	for (u32 thread_i=0; thread_i<threads.len; ++thread_i) {
 		auto& thr = threads[thread_i];
 		
-		u32 count = thr.get_block_count();
+		u32 count = thr.blocks.len;
 		
 		print("Thread % '%' % blocks:\n", thread_i, thr.name, count);
 		
+		glGenBuffers(1, &thr.gl_buf.VBO);
+		glGenVertexArrays(1, &thr.gl_buf.VAO);
+		
 		thr.gl_buf.gl_bars_vao();
+		
+		auto gl_size = safe_cast_assert(GLsizeiptr, count * sizeof(std140_Bar));
+		
+		// NOTE: GL_ARRAY_BUFFER bound in gl_bars_vao() call
+		glBufferData(GL_ARRAY_BUFFER, gl_size, NULL, GL_STREAM_DRAW);
+		
+	}
+	
+}
+
+DECL u32 blocks_per_frame = 25;
+
+void every_frame () {
+	
+	for (u32 thread_i=0; thread_i<threads.len; ++thread_i) {
+		auto& thr = threads[thread_i];
+		
+		u32 begin = thr.buffered_count;
+		u32 max = MIN( thr.blocks.len, begin +blocks_per_frame );
+		u32 count = max -begin;
 		
 		DEFER_POP(&working_stk);
 		auto* data = working_stk.pushArr<std140_Bar>(count);
-		u32 i = 0;
+		u32 cur = 0;
 		
-		auto add_block = [&] (Node& n, u32 depth) {
-			assert(i < count, "% %", i, count);
+		for (u32 i=begin; i<max; ++i) {
+			Block& n = thr.blocks[i];
 			
 			#if 0
-			print("%(%) %:%:%	% % %\n", repeat("  ", depth), i, n.begin, n.length, depth, n.name, n.index, (u32)n.flags);
-			//Sleep(0);
+			print("%(%) %:%:%	% % %\n", repeat("  ", n.depth), i, n.begin, n.length, n.depth, n.name, n.index, (u32)n.flags);
+			//Sleep(1);
 			#endif
 			
-			data[i] = {}; // zero potential padding
+			data[cur] = {}; // zero potential padding
 			
 			auto col = COLS[ i % arrlenof(COLS) ];
 			if (n.flags & BT_WAIT) {
 				col = tv3<GLubyte>(120, 120, 120);
 			}
 			
-			data[i].pos_t.set( (f32)n.begin );
-			data[i].len_t.set( (f32)n.length );
-			data[i].depth.set( safe_cast_assert(GLint, depth) );
-			data[i].type_flags.set(n.flags);
-			data[i].name_offs.set(safe_cast_assert(GLint, ptr_sub(blocks_str_storage.arr, n.name.str)));
-			data[i].name_len.set(safe_cast_assert(GLint, n.name.len));
-			data[i].col = col;
+			data[cur].pos_t.set( (f32)n.begin );
+			data[cur].len_t.set( (f32)n.length );
+			data[cur].depth.set( safe_cast_assert(GLint, n.depth) );
+			data[cur].type_flags.set(n.flags);
+			data[cur].name_offs.set(safe_cast_assert(GLint, ptr_sub(blocks_str_storage.arr, n.name.str)));
+			data[cur].name_len.set(safe_cast_assert(GLint, n.name.len));
+			data[cur].col = col;
 			
-			++i;
-		};
-		thr.traverse_depth_first(add_block);
+			++cur;
+		}
 		
-		assert(i == count, "% %", i, count);
+		thr.buffered_count = max;
 		
-		auto gl_size = safe_cast_assert(GLsizeiptr, count * sizeof(std140_Bar));
-		
-		// NOTE: GL_ARRAY_BUFFER bound in gl_bars_vao() call
-		glBufferData(GL_ARRAY_BUFFER, gl_size, data, GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, thr.gl_buf.VBO);
+		glBufferSubData(GL_ARRAY_BUFFER,
+				safe_cast_assert(GLintptr,		begin * sizeof(std140_Bar)),
+				safe_cast_assert(GLsizeiptr,	count * sizeof(std140_Bar)),
+				data);
 		
 	}
-	
-	print("done.\n");
 	
 }
 
@@ -1965,11 +1965,12 @@ GLsizei gl_thread_bars_draw_prep (u32 thread_i) {
 					sizeof temp, &temp);
 	}
 	
-	return safe_cast_assert(GLsizei, threads[thread_i].get_block_count());
+	return safe_cast_assert(GLsizei, threads[thread_i].buffered_count );
 }
 
 void frame () {
 	
+	every_frame();
 	
 	{ // Input query
 		input::query(&inp, &sinp);
