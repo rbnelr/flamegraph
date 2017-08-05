@@ -1,266 +1,266 @@
 
 namespace engine {
-	
-	/*
-		Coordinate system convetions:
-		X - right/east,		red, right hand is primary
-		Y - forward/north,	green
-		Z - up,				blue, least important coordinate, discribes height in maps etc., x & y are like coordinates in a map
-	*/
-	
-	#define PI				3.1415926535897932384626433832795f
-	#define TWO_PI			6.283185307179586476925286766559f
-	#define PId				3.1415926535897932384626433832795
-	#define TWO_PId			6.283185307179586476925286766559
-	
-	#define QNAN			fp::qnan<f32>()
-	#define QNANd			fp::qnan<f64>()
-	
-	#define DEG_TO_RADd		(TWO_PId / 360.0)
-	#define DEG_TO_RAD		((f32)DEG_TO_RADd)
-	#define RAD_TO_DEGd		(360.0 / TWO_PId)
-	#define RAD_TO_DEG		((f32)RAD_TO_DEGd)
-	
-	// Units which always convert to the internal representation (which is radians)
-	DECL constexpr	f32 deg (f32 deg) {
-		return deg * DEG_TO_RAD;
+
+/*
+	Coordinate system convetions:
+	X - right/east,		red, right hand is primary
+	Y - forward/north,	green
+	Z - up,				blue, least important coordinate, discribes height in maps etc., x & y are like coordinates in a map
+*/
+
+#define PI				3.1415926535897932384626433832795f
+#define TWO_PI			6.283185307179586476925286766559f
+#define PId				3.1415926535897932384626433832795
+#define TWO_PId			6.283185307179586476925286766559
+
+#define QNAN			fp::qnan<f32>()
+#define QNANd			fp::qnan<f64>()
+
+#define DEG_TO_RADd		(TWO_PId / 360.0)
+#define DEG_TO_RAD		((f32)DEG_TO_RADd)
+#define RAD_TO_DEGd		(360.0 / TWO_PId)
+#define RAD_TO_DEG		((f32)RAD_TO_DEGd)
+
+// Units which always convert to the internal representation (which is radians)
+DECL constexpr	f32 deg (f32 deg) {
+	return deg * DEG_TO_RAD;
+}
+DECL constexpr	f64 deg (f64 deg) {
+	return deg * DEG_TO_RADd;
+}
+DECL constexpr	f32 rad (f32 rad) {
+	return rad;
+}
+DECL constexpr	f64 rad (f64 rad) {
+	return rad;
+}
+
+template <typename T>	DECL constexpr tv2<T> deg (tv2<T> vp deg) {		return deg * tv2<T>(T(DEG_TO_RADd)); }
+template <typename T>	DECL constexpr tv3<T> deg (tv3<T> vp deg) {		return deg * tv3<T>(T(DEG_TO_RADd)); }
+template <typename T>	DECL constexpr tv4<T> deg (tv4<T> vp deg) {		return deg * tv4<T>(T(DEG_TO_RADd)); }
+template <typename T>	DECL constexpr tv2<T> rad (tv2<T> vp rad) {		return rad; }
+template <typename T>	DECL constexpr tv3<T> rad (tv3<T> vp rad) {		return rad; }
+template <typename T>	DECL constexpr tv4<T> rad (tv4<T> vp rad) {		return rad; }
+
+// Conversions
+DECL constexpr	f64 to_deg (f64 rad) {
+	return rad * RAD_TO_DEGd;
+}
+DECL constexpr	f32 to_deg (f32 rad) {
+	return rad * RAD_TO_DEG;
+}
+DECL constexpr	f32 to_rad (f32 deg) {
+	return deg * DEG_TO_RAD;
+}
+DECL constexpr	f64 to_rad (f64 deg) {
+	return deg * DEG_TO_RADd;
+}
+
+template <typename T>	DECL constexpr tv2<T> to_deg (tv2<T> vp rad) {	return rad * tv2<T>(T(RAD_TO_DEGd)); }
+template <typename T>	DECL constexpr tv3<T> to_deg (tv3<T> vp rad) {	return rad * tv3<T>(T(RAD_TO_DEGd)); }
+template <typename T>	DECL constexpr tv4<T> to_deg (tv4<T> vp rad) {	return rad * tv4<T>(T(RAD_TO_DEGd)); }
+template <typename T>	DECL constexpr tv2<T> to_rad (tv2<T> vp deg) {	return deg * tv2<T>(T(DEG_TO_RADd)); }
+template <typename T>	DECL constexpr tv3<T> to_rad (tv3<T> vp deg) {	return deg * tv3<T>(T(DEG_TO_RADd)); }
+template <typename T>	DECL constexpr tv4<T> to_rad (tv4<T> vp deg) {	return deg * tv4<T>(T(DEG_TO_RADd)); }
+
+DECL f32 mod_pn_180deg (f32 ang) { // mod float into -/+ 180deg range
+	return fp::proper_mod(ang +deg(180.0f), deg(360.0f)) -deg(180.0f);
+}
+
+template <typename T>	DECL T to_linear (T srgb) {
+	if (srgb <= T(0.0404482362771082)) {
+		return srgb * T(1/12.92);
+	} else {
+		return fp::pow( (srgb +T(0.055)) * T(1/1.055), T(2.4) );
 	}
-	DECL constexpr	f64 deg (f64 deg) {
-		return deg * DEG_TO_RADd;
+}
+template <typename T>	DECL T to_srgb (T linear) {
+	if (linear <= T(0.00313066844250063)) {
+		return linear * T(12.92);
+	} else {
+		return ( T(1.055) * fp::pow(linear, T(1/2.4)) ) -T(0.055);
 	}
-	DECL constexpr	f32 rad (f32 rad) {
-		return rad;
-	}
-	DECL constexpr	f64 rad (f64 rad) {
-		return rad;
-	}
-	
-	template <typename T>	DECL constexpr tv2<T> deg (tv2<T> vp deg) {		return deg * tv2<T>(T(DEG_TO_RADd)); }
-	template <typename T>	DECL constexpr tv3<T> deg (tv3<T> vp deg) {		return deg * tv3<T>(T(DEG_TO_RADd)); }
-	template <typename T>	DECL constexpr tv4<T> deg (tv4<T> vp deg) {		return deg * tv4<T>(T(DEG_TO_RADd)); }
-	template <typename T>	DECL constexpr tv2<T> rad (tv2<T> vp rad) {		return rad; }
-	template <typename T>	DECL constexpr tv3<T> rad (tv3<T> vp rad) {		return rad; }
-	template <typename T>	DECL constexpr tv4<T> rad (tv4<T> vp rad) {		return rad; }
-	
-	// Conversions
-	DECL constexpr	f64 to_deg (f64 rad) {
-		return rad * RAD_TO_DEGd;
-	}
-	DECL constexpr	f32 to_deg (f32 rad) {
-		return rad * RAD_TO_DEG;
-	}
-	DECL constexpr	f32 to_rad (f32 deg) {
-		return deg * DEG_TO_RAD;
-	}
-	DECL constexpr	f64 to_rad (f64 deg) {
-		return deg * DEG_TO_RADd;
-	}
-	
-	template <typename T>	DECL constexpr tv2<T> to_deg (tv2<T> vp rad) {	return rad * tv2<T>(T(RAD_TO_DEGd)); }
-	template <typename T>	DECL constexpr tv3<T> to_deg (tv3<T> vp rad) {	return rad * tv3<T>(T(RAD_TO_DEGd)); }
-	template <typename T>	DECL constexpr tv4<T> to_deg (tv4<T> vp rad) {	return rad * tv4<T>(T(RAD_TO_DEGd)); }
-	template <typename T>	DECL constexpr tv2<T> to_rad (tv2<T> vp deg) {	return deg * tv2<T>(T(DEG_TO_RADd)); }
-	template <typename T>	DECL constexpr tv3<T> to_rad (tv3<T> vp deg) {	return deg * tv3<T>(T(DEG_TO_RADd)); }
-	template <typename T>	DECL constexpr tv4<T> to_rad (tv4<T> vp deg) {	return deg * tv4<T>(T(DEG_TO_RADd)); }
-	
-	DECL f32 mod_pn_180deg (f32 ang) { // mod float into -/+ 180deg range
-		return fp::proper_mod(ang +deg(180.0f), deg(360.0f)) -deg(180.0f);
-	}
-	
-	template <typename T>	DECL T to_linear (T srgb) {
-		if (srgb <= T(0.0404482362771082)) {
-			return srgb * T(1/12.92);
-		} else {
-			return fp::pow( (srgb +T(0.055)) * T(1/1.055), T(2.4) );
-		}
-	}
-	template <typename T>	DECL T to_srgb (T linear) {
-		if (linear <= T(0.00313066844250063)) {
-			return linear * T(12.92);
-		} else {
-			return ( T(1.055) * fp::pow(linear, T(1/2.4)) ) -T(0.055);
-		}
-	}
-	
-	template <typename T> DECL constexpr tv3<T> to_linear (tv3<T> srgb) {
-		return tv3<T>( to_linear(srgb.x), to_linear(srgb.y), to_linear(srgb.z) );
-	}
-	template <typename T> DECL constexpr tv3<T> to_srgb (tv3<T> linear) {
-		return tv3<T>( to_srgb(linear.x), to_srgb(linear.y), to_srgb(linear.z) );
-	}
-	
-	template <typename T>	DECL constexpr tv3<T> col (T x, T y, T z) {		return tv3<T>(x,y,z); }
-	template <typename T>	DECL constexpr tv3<T> srgb (T x, T y, T z) {	return to_linear(tv3<T>(x,y,z) * tv3<T>(T(1.0/255.0))); }
-	template <typename T>	DECL constexpr tv3<T> col (T all) {				return col(all,all,all); }
-	template <typename T>	DECL constexpr tv3<T> srgb (T all) {			return srgb(all,all,all); }
-	
-	DECL m3 scale_3 (v3 vp scale) {
-		m3 ret = m3::zero();
-		ret.row(0, 0, scale.x);
-		ret.row(1, 1, scale.y);
-		ret.row(2, 2, scale.z);
-		return ret;
-	}
-	DECL m3 rotate_X3 (f32 angle) {
-		auto t = fp::sincos(angle);
-		m3 ret = m3::row(	1,		0,		0,
-							0,		+t.c,	-t.s,
-							0,		+t.s,	+t.c );
-		return ret;
-	}
-	DECL m3 rotate_Y3 (f32 angle) {
-		auto t = fp::sincos(angle);
-		m3 ret = m3::row(	+t.c,	0,		+t.s,
-							0,		1,		0,
-							-t.s,	0,		+t.c );
-		return ret;
-	}
-	DECL m3 rotate_Z3 (f32 angle) {
-		auto t = fp::sincos(angle);
-		m3 ret = m3::row(	+t.c,	-t.s,	0,
-							+t.s,	+t.c,	0,
-							0,		0,		1 );
-		return ret;
-	}
-	
-	DECL m4 translate_4 (v3 vp v) {
-		m4 ret = m4::ident();
-		ret.column(3, v4(v, 1));
-		return ret;
-	}
-	DECL m4 scale_4 (v3 vp scale) {
-		m4 ret = m4::zero();
-		ret.row(0, 0, scale.x);
-		ret.row(1, 1, scale.y);
-		ret.row(2, 2, scale.z);
-		ret.row(3, 3, 1);
-		return ret;
-	}
-	DECL m4 rotate_X4 (f32 angle) {
-		auto t = fp::sincos(angle);
-		m4 ret = m4::row(	1,		0,		0,		0,
-							0,		+t.c,	-t.s,	0,
-							0,		+t.s,	+t.c,	0,
-							0,		0,		0,		1 );
-		return ret;
-	}
-	DECL m4 rotate_Y4 (f32 angle) {
-		auto t = fp::sincos(angle);
-		m4 ret = m4::row(	+t.c,	0,		+t.s,	0,
-							0,		1,		0,		0,
-							-t.s,	0,		+t.c,	0,
-							0,		0,		0,		1 );
-		return ret;
-	}
-	DECL m4 rotate_Z4 (f32 angle) {
-		auto t = fp::sincos(angle);
-		m4 ret = m4::row(	+t.c,	-t.s,	0,		0,
-							+t.s,	+t.c,	0,		0,
-							0,		0,		1,		0,
-							0,		0,		0,		1 );
-		return ret;
-	}
-	
-	DECL hm translate_h (v3 vp v) {
-		#if 0
-		return hm::row( 1, 0, 0, v.x,
-						0, 1, 0, v.y,
-						0, 0, 1, v.z);
-		#else // Better asm
-		hm ret;
-		ret.arr[0].x = 1;
-		ret.arr[0].y = 0;
-		ret.arr[0].z = 0;
-		ret.arr[1].x = 0;
-		ret.arr[1].y = 1;
-		ret.arr[1].z = 0;
-		ret.arr[2].x = 0;
-		ret.arr[2].y = 0;
-		ret.arr[2].z = 1;
-		ret.arr[3].x = v.x;
-		ret.arr[3].y = v.y;
-		ret.arr[3].z = v.z;
-		return ret;
-		#endif
-	}
-	DECL hm scale_h (v3 vp scale) {
-		hm ret = hm::ident();
-		ret.row(0, 0, scale.x);
-		ret.row(1, 1, scale.y);
-		ret.row(2, 2, scale.z);
-		return ret;
-	}
-	DECL hm rotate_x (f32 angle) {
-		auto t = fp::sincos(angle);
-		return hm::row( 1,		0,		0,		0,
+}
+
+template <typename T> DECL constexpr tv3<T> to_linear (tv3<T> srgb) {
+	return tv3<T>( to_linear(srgb.x), to_linear(srgb.y), to_linear(srgb.z) );
+}
+template <typename T> DECL constexpr tv3<T> to_srgb (tv3<T> linear) {
+	return tv3<T>( to_srgb(linear.x), to_srgb(linear.y), to_srgb(linear.z) );
+}
+
+template <typename T>	DECL constexpr tv3<T> col (T x, T y, T z) {		return tv3<T>(x,y,z); }
+template <typename T>	DECL constexpr tv3<T> srgb (T x, T y, T z) {	return to_linear(tv3<T>(x,y,z) * tv3<T>(T(1.0/255.0))); }
+template <typename T>	DECL constexpr tv3<T> col (T all) {				return col(all,all,all); }
+template <typename T>	DECL constexpr tv3<T> srgb (T all) {			return srgb(all,all,all); }
+
+DECL m3 scale_3 (v3 vp scale) {
+	m3 ret = m3::zero();
+	ret.row(0, 0, scale.x);
+	ret.row(1, 1, scale.y);
+	ret.row(2, 2, scale.z);
+	return ret;
+}
+DECL m3 rotate_X3 (f32 angle) {
+	auto t = fp::sincos(angle);
+	m3 ret = m3::row(	1,		0,		0,
+						0,		+t.c,	-t.s,
+						0,		+t.s,	+t.c );
+	return ret;
+}
+DECL m3 rotate_Y3 (f32 angle) {
+	auto t = fp::sincos(angle);
+	m3 ret = m3::row(	+t.c,	0,		+t.s,
+						0,		1,		0,
+						-t.s,	0,		+t.c );
+	return ret;
+}
+DECL m3 rotate_Z3 (f32 angle) {
+	auto t = fp::sincos(angle);
+	m3 ret = m3::row(	+t.c,	-t.s,	0,
+						+t.s,	+t.c,	0,
+						0,		0,		1 );
+	return ret;
+}
+
+DECL m4 translate_4 (v3 vp v) {
+	m4 ret = m4::ident();
+	ret.column(3, v4(v, 1));
+	return ret;
+}
+DECL m4 scale_4 (v3 vp scale) {
+	m4 ret = m4::zero();
+	ret.row(0, 0, scale.x);
+	ret.row(1, 1, scale.y);
+	ret.row(2, 2, scale.z);
+	ret.row(3, 3, 1);
+	return ret;
+}
+DECL m4 rotate_X4 (f32 angle) {
+	auto t = fp::sincos(angle);
+	m4 ret = m4::row(	1,		0,		0,		0,
 						0,		+t.c,	-t.s,	0,
-						0,		+t.s,	+t.c,	0 );
-	}
-	DECL hm rotate_y (f32 angle) {
-		auto t = fp::sincos(angle);
-		return hm::row( +t.c,	0,		+t.s,	0,
+						0,		+t.s,	+t.c,	0,
+						0,		0,		0,		1 );
+	return ret;
+}
+DECL m4 rotate_Y4 (f32 angle) {
+	auto t = fp::sincos(angle);
+	m4 ret = m4::row(	+t.c,	0,		+t.s,	0,
 						0,		1,		0,		0,
-						-t.s,	0,		+t.c,	0 );
-	}
-	DECL hm rotate_z (f32 angle) {
-		auto t = fp::sincos(angle);
-		return hm::row( +t.c,	-t.s,	0,		0,
+						-t.s,	0,		+t.c,	0,
+						0,		0,		0,		1 );
+	return ret;
+}
+DECL m4 rotate_Z4 (f32 angle) {
+	auto t = fp::sincos(angle);
+	m4 ret = m4::row(	+t.c,	-t.s,	0,		0,
 						+t.s,	+t.c,	0,		0,
-						0,		0,		1,		0 );
-	}
+						0,		0,		1,		0,
+						0,		0,		0,		1 );
+	return ret;
+}
+
+DECL hm translate_h (v3 vp v) {
+	#if 0
+	return hm::row( 1, 0, 0, v.x,
+					0, 1, 0, v.y,
+					0, 0, 1, v.z);
+	#else // Better asm
+	hm ret;
+	ret.arr[0].x = 1;
+	ret.arr[0].y = 0;
+	ret.arr[0].z = 0;
+	ret.arr[1].x = 0;
+	ret.arr[1].y = 1;
+	ret.arr[1].z = 0;
+	ret.arr[2].x = 0;
+	ret.arr[2].y = 0;
+	ret.arr[2].z = 1;
+	ret.arr[3].x = v.x;
+	ret.arr[3].y = v.y;
+	ret.arr[3].z = v.z;
+	return ret;
+	#endif
+}
+DECL hm scale_h (v3 vp scale) {
+	hm ret = hm::ident();
+	ret.row(0, 0, scale.x);
+	ret.row(1, 1, scale.y);
+	ret.row(2, 2, scale.z);
+	return ret;
+}
+DECL hm rotate_x (f32 angle) {
+	auto t = fp::sincos(angle);
+	return hm::row( 1,		0,		0,		0,
+					0,		+t.c,	-t.s,	0,
+					0,		+t.s,	+t.c,	0 );
+}
+DECL hm rotate_y (f32 angle) {
+	auto t = fp::sincos(angle);
+	return hm::row( +t.c,	0,		+t.s,	0,
+					0,		1,		0,		0,
+					-t.s,	0,		+t.c,	0 );
+}
+DECL hm rotate_z (f32 angle) {
+	auto t = fp::sincos(angle);
+	return hm::row( +t.c,	-t.s,	0,		0,
+					+t.s,	+t.c,	0,		0,
+					0,		0,		1,		0 );
+}
+
+DECL quat rotate_quat_axis (v3 vp axis, f32 angle) {
+	auto t = fp::sincos(angle / 2.0f);
+	return quat( axis * v3(t.s), t.c );
+}
+DECL quat rotate_XQuat (f32 angle) {
+	auto t = fp::sincos(angle / 2.0f);
+	return quat( v3(t.s, 0, 0), t.c );
+}
+DECL quat rotate_YQuat (f32 angle) {
+	auto t = fp::sincos(angle / 2.0f);
+	return quat( v3(0, t.s, 0), t.c );
+}
+DECL quat rotate_ZQuat (f32 angle) {
+	auto t = fp::sincos(angle / 2.0f);
+	return quat( v3(0, 0, t.s), t.c );
+}
+
+constexpr f32 _90deg_arr[5] = { 0, +1, 0, -1, 0 };
+DECL fp::SC _90deg_getSC (si multiple) {
+	fp::SC ret;
 	
-	DECL quat rotate_quat_axis (v3 vp axis, f32 angle) {
-		auto t = fp::sincos(angle / 2.0f);
-		return quat( axis * v3(t.s), t.c );
-	}
-	DECL quat rotate_XQuat (f32 angle) {
-		auto t = fp::sincos(angle / 2.0f);
-		return quat( v3(t.s, 0, 0), t.c );
-	}
-	DECL quat rotate_YQuat (f32 angle) {
-		auto t = fp::sincos(angle / 2.0f);
-		return quat( v3(0, t.s, 0), t.c );
-	}
-	DECL quat rotate_ZQuat (f32 angle) {
-		auto t = fp::sincos(angle / 2.0f);
-		return quat( v3(0, 0, t.s), t.c );
-	}
+	multiple = multiple & 0b11;
 	
-	constexpr f32 _90deg_arr[5] = { 0, +1, 0, -1, 0 };
-	DECL fp::SC _90deg_getSC (si multiple) {
-		fp::SC ret;
-		
-		multiple = multiple & 0b11;
-		
-		ret.s = _90deg_arr[multiple];
-		ret.c = _90deg_arr[multiple +1];
-		return ret;
-	};
-	DECL m3 rotate_X_90deg (si multiple) {
-		auto g = _90deg_getSC(multiple);
-		m3 ret = m3::row(	1,		0,		0,
-							0,		+g.c,	-g.s,
-							0,		+g.s,	+g.c );
-		return ret;
-	};
-	DECL m3 rotate_Y_90deg (si multiple) {
-		auto g = _90deg_getSC(multiple);
-		m3 ret = m3::row(	+g.c,	0,		+g.s,
-							0,		1,		0,
-							-g.s,	0,		+g.c );
-		return ret;
-	};
-	DECL m3 rotate_Z_90deg (si multiple) {
-		auto g = _90deg_getSC(multiple);
-		m3 ret = m3::row(	+g.c,	-g.s,	0,
-							+g.s,	+g.c,	0,
-							0,		0,		1 );
-		return ret;
-	};
-	
+	ret.s = _90deg_arr[multiple];
+	ret.c = _90deg_arr[multiple +1];
+	return ret;
+};
+DECL m3 rotate_X_90deg (si multiple) {
+	auto g = _90deg_getSC(multiple);
+	m3 ret = m3::row(	1,		0,		0,
+						0,		+g.c,	-g.s,
+						0,		+g.s,	+g.c );
+	return ret;
+};
+DECL m3 rotate_Y_90deg (si multiple) {
+	auto g = _90deg_getSC(multiple);
+	m3 ret = m3::row(	+g.c,	0,		+g.s,
+						0,		1,		0,
+						-g.s,	0,		+g.c );
+	return ret;
+};
+DECL m3 rotate_Z_90deg (si multiple) {
+	auto g = _90deg_getSC(multiple);
+	m3 ret = m3::row(	+g.c,	-g.s,	0,
+						+g.s,	+g.c,	0,
+						0,		0,		1 );
+	return ret;
+};
+
 //// UBO
 #include "ogl_ubo_interface.h"
-	
+
 #pragma pack (push, 1)
 
 struct std140_Bar {
@@ -280,7 +280,7 @@ ASSERT_STD140_ALIGNMENT(std140_Bar, type_flags);
 ASSERT_STD140_ALIGNMENT(std140_Bar, name_offs);
 ASSERT_STD140_ALIGNMENT(std140_Bar, name_len);
 //ASSERT_STD140_ALIGNMENT(std140_Bar, col);
-	
+
 struct std140_Global {
 	std140::vec2		fscreen_res;
 	std140::float_		view_pos_sec_to_pix;
@@ -303,86 +303,85 @@ ASSERT_STD140_ALIGNMENT(std140_Global, vert_line_pos);
 ASSERT_STD140_ALIGNMENT(std140_Global, pos);
 ASSERT_STD140_ALIGNMENT(std140_Global, str_len);
 ASSERT_STD140_ALIGNMENT(std140_Global, str_clip_x);
-	
+
 struct std140_View {
 	std140::float_		view_pos_sec_to_pix;
 	std140::float_		view_scale_sec_to_pix;
 };
-	
+
 struct std140_String {
 	std140::ivec2		pos;
 	std140::sint_		str_len;
 	std140::float_		str_clip_x;
 };
-	
+
 #pragma pack (pop)
-	
+
 //// VBO
-	constexpr GLuint	GLOBAL_UNIFORM_BLOCK_BINDING =		0;
-	
-	enum vbo_indx_e : u32 {
-		VBO_UBO=0,
-		VBO_BUF_TEX_BAR_NAME_STR_TBL,
-		VBO_BUF_TEX_FREE_TEXT,
-		VBO_COUNT
-	};
-	
+constexpr GLuint	GLOBAL_UNIFORM_BLOCK_BINDING =		0;
+
+enum vbo_indx_e : u32 {
+	VBO_UBO=0,
+	VBO_BUF_TEX_BAR_NAME_STR_TBL,
+	VBO_BUF_TEX_FREE_TEXT,
+	VBO_COUNT
+};
+
 //// VAO
-	enum : u32 {
-		VAO_EMTPY=0,
-		VAO_COUNT
-	};
-	
+enum : u32 {
+	VAO_EMTPY=0,
+	VAO_COUNT
+};
+
 //// Textures
-	enum : u32 {
-		SAMPL_TEXT=0,
-		SAMPL_COUNT
-	};
-	enum : u32 {
-		TEX_TEXT_DATA=0,
-		TEX_GLYPHS,
-		TEX_COUNT
-	};
-	
+enum : u32 {
+	SAMPL_TEXT=0,
+	SAMPL_COUNT
+};
+enum : u32 {
+	TEX_TEXT_DATA=0,
+	TEX_GLYPHS,
+	TEX_COUNT
+};
+
 ////
-	constexpr GLint		SHAD_BAR_HEIGHT =		36;
-	constexpr GLint		SHAD_BAR_OFFS =			38;
-	constexpr GLint		SHAD_BAR_BASE_OFFS =	2 * SHAD_BAR_OFFS;
-	
-	constexpr auto		GLYPH_DIM =				tv2<GLint>(8, 15);
-	constexpr u32		SHAD_MAX_STR_LEN =		256; // 256 * 8pix = 2k pix long strings
-	
+constexpr GLint		SHAD_BAR_HEIGHT =		36;
+constexpr GLint		SHAD_BAR_OFFS =			38;
+constexpr GLint		SHAD_BAR_BASE_OFFS =	2 * SHAD_BAR_OFFS;
+
+constexpr auto		GLYPH_DIM =				tv2<GLint>(8, 15);
+constexpr u32		SHAD_MAX_STR_LEN =		256; // 256 * 8pix = 2k pix long strings
+
 //// Shaders
-	constexpr GLint		TEXT_DATA_TEX_UNIT =					0;
-	constexpr GLint		GLYPHS_TEX_UNIT =						1;
-	
-	// Shaders
-	enum shad_id_e: u32 {
-		SHAD_VERT_BARS=0,
-		SHAD_FRAG_BARS,
-		SHAD_VERT_FULLSCREEN_QUAD,
-		//SHAD_FRAG_TEST_SHOW_ALPHA,
-		SHAD_FRAG_ACCUM_CLEAR,
-		SHAD_VERT_VERT_LINE,
-		SHAD_FRAG_VERT_LINE,
-		SHAD_VERT_BAR_TEXT,
-		SHAD_FRAG_BAR_TEXT,
-		SHAD_VERT_BAR_DURATION_TEXT,
-		SHAD_FRAG_BAR_DURATION_TEXT,
-		SHAD_VERT_FREE_TEXT,
-		SHAD_FRAG_FREE_TEXT,
-		SHAD_COUNT,
-		SHAD_NULL=(u32)-1,
-	};
-	DEFINE_ENUM_ITER_OPS(shad_id_e, u32)
-	
-	constexpr GLchar const* GLSL_VERSION_SRC =
+constexpr GLint		TEXT_DATA_TEX_UNIT =					0;
+constexpr GLint		GLYPHS_TEX_UNIT =						1;
+
+enum shad_id_e: u32 {
+	SHAD_VERT_BARS=0,
+	SHAD_FRAG_BARS,
+	SHAD_VERT_FULLSCREEN_QUAD,
+	//SHAD_FRAG_TEST_SHOW_ALPHA,
+	SHAD_FRAG_ACCUM_CLEAR,
+	SHAD_VERT_VERT_LINE,
+	SHAD_FRAG_VERT_LINE,
+	SHAD_VERT_BAR_TEXT,
+	SHAD_FRAG_BAR_TEXT,
+	SHAD_VERT_BAR_DURATION_TEXT,
+	SHAD_FRAG_BAR_DURATION_TEXT,
+	SHAD_VERT_FREE_TEXT,
+	SHAD_FRAG_FREE_TEXT,
+	SHAD_COUNT,
+	SHAD_NULL=(u32)-1,
+};
+DEFINE_ENUM_ITER_OPS(shad_id_e, u32)
+
+constexpr GLchar const* GLSL_VERSION_SRC =
 R"_SHAD(
 	#version 150 // version 3.2
 	#extension GL_ARB_explicit_attrib_location : require
 )_SHAD";
-	
-	constexpr GLchar const* SHAD_GLOBAL_UBO =
+
+constexpr GLchar const* SHAD_GLOBAL_UBO =
 R"_SHAD(
 	layout(std140)			uniform Global {
 		vec2			fscreen_res;
@@ -409,249 +408,370 @@ R"_SHAD(
 	
 	const vec3	TEXT_FG_COL =		vec3(224, 226, 228) / vec3(255);
 )_SHAD";
-	
-	struct Shader {
-		GLenum			type;
-		GLchar const*	src;
-	};
-	
-	constexpr Shader SHADERS[] = {
-	
+
+struct Shader {
+	GLenum			type;
+	GLchar const*	src;
+};
+
+constexpr Shader SHADERS[] = {
+
 /* SHAD_VERT_BARS */ { GL_VERTEX_SHADER, R"_SHAD(
+
+layout(location=0)	in	float			attr_pos_t;
+layout(location=1)	in	float			attr_len_t;
+layout(location=2)	in	int				attr_depth;
+layout(location=3)	in	uint			attr_type_flags;
+//layout(location=4)	in	int				attr_name_offs;
+//layout(location=5)	in	int				attr_name_len;
+layout(location=6)	in	vec3			attr_col;
+
+flat				out vec3			pass_col;
+smooth				out float			interp_alpha;
+
+flat				out float			pass_fbar_height;
+flat				out float			pass_w_px;
+smooth				out vec2			interp_uv_px;
+
+void main () {
 	
-	layout(location=0)	in	float			attr_pos_t;
-	layout(location=1)	in	float			attr_len_t;
-	layout(location=2)	in	int				attr_depth;
-	layout(location=3)	in	uint			attr_type_flags;
-	//layout(location=4)	in	int				attr_name_offs;
-	//layout(location=5)	in	int				attr_name_len;
-	layout(location=6)	in	vec3			attr_col;
+	float pos_x_counter = attr_pos_t * g.units_counter_to_sec;
+	float pos_x_px = (pos_x_counter -g.view_pos_sec_to_pix) * g.view_scale_sec_to_pix;
 	
-	flat				out vec3			pass_col;
-	smooth				out float			interp_alpha;
+	float len_x_px = attr_len_t * g.units_counter_to_sec * g.view_scale_sec_to_pix;
 	
-	flat				out float			pass_fbar_height;
-	flat				out float			pass_w_px;
-	smooth				out vec2			interp_uv_px;
+	float bar_pos_x_px = 0.0;
+	float alpha = 0.0;
 	
-	void main () {
-		
-		float pos_x_counter = attr_pos_t * g.units_counter_to_sec;
-		float pos_x_px = (pos_x_counter -g.view_pos_sec_to_pix) * g.view_scale_sec_to_pix;
-		
-		float len_x_px = attr_len_t * g.units_counter_to_sec * g.view_scale_sec_to_pix;
-		
-		float bar_pos_x_px = 0.0;
-		float alpha = 0.0;
-		
-		if (len_x_px >= 1.0) {
-			switch (gl_VertexID >> 1) {
-				case 0:
-					bar_pos_x_px = -0.5;
-					alpha = 0.0;
-					break;
-				case 1:
-					bar_pos_x_px = +0.5;
-					alpha = 1.0;
-					break;
-				case 2:
-					bar_pos_x_px = len_x_px -0.5;
-					alpha = 1.0;
-					break;
-				case 3:
-					bar_pos_x_px = len_x_px +0.5;
-					alpha = 0.0;
-					break;
-			}
-		} else {
-			
-			float flat_part_width = 1.0 -len_x_px;
-			
-			switch (gl_VertexID >> 1) {
-				case 0:
-					bar_pos_x_px = (len_x_px / 2.0) -(flat_part_width / 2.0) -len_x_px;
-					alpha = 0.0;
-					break;
-				case 1:
-					bar_pos_x_px = (len_x_px / 2.0) -(flat_part_width / 2.0);
-					alpha = len_x_px;
-					break;
-				case 2:
-					bar_pos_x_px = (len_x_px / 2.0) +(flat_part_width / 2.0);
-					alpha = len_x_px;
-					break;
-				case 3:
-					bar_pos_x_px = (len_x_px / 2.0) +(flat_part_width / 2.0) +len_x_px;
-					alpha = 0.0;
-					break;
-			}
-		}
-		
-		int y = (gl_VertexID & 1) ^ 1;
-		
-		int bar_height = BAR_HEIGHT;
-		if ((attr_type_flags & BT_WAIT) != 0u) {
-			bar_height = LOW_BAR_HEIGHT;
-		}
-		
-		pass_fbar_height = float(bar_height);
-		
-		bar_height *= y;
-		
-		pass_w_px = len_x_px;
-		interp_uv_px = vec2(bar_pos_x_px, float(bar_height));
-		
-		pos_x_px += bar_pos_x_px;
-		
-		float pos_y_px = float( (attr_depth * BAR_OFFS) +bar_height +g.bar_base_offs );
-		
-		gl_Position = vec4( ((vec2(pos_x_px, pos_y_px) / g.fscreen_res) * vec2(2)) -vec2(1), 0.0, 1.0 );
-		
-		pass_col = attr_col;
-		interp_alpha = alpha;
-		
-	}
-)_SHAD" },
-	
-/* SHAD_FRAG_BARS */ { GL_FRAGMENT_SHADER, R"_SHAD(
-	
-	flat				in	vec3			pass_col;
-	smooth				in	float			interp_alpha;
-	
-	flat				in	float			pass_fbar_height;
-	flat				in	float			pass_w_px;
-	smooth				in	vec2			interp_uv_px;
-	
-	out vec4			frag_col;
-	
-	bvec2 lte (vec2 l, vec2 r) {
-		return not(greaterThan(l, r));
-	}
-	
-	void main () {
-		//frag_col = vec4(pass_col, interp_alpha);
-		
-		if (	(interp_uv_px.x < 1.2 || interp_uv_px.x > (pass_w_px -1.2)) &&
-				(interp_uv_px.y < 1.2 || interp_uv_px.y > (pass_fbar_height -1.2)) ) {
-			discard;
-		}
-		frag_col = vec4(pass_col, interp_alpha);
-	}
-)_SHAD" },
-	
-/* SHAD_VERT_FULLSCREEN_QUAD */ { GL_VERTEX_SHADER, R"_SHAD(
-	
-	void main () {
-		
-		vec2 pos = vec2(gl_VertexID & 1, (gl_VertexID >> 1) & 1);
-		pos *= vec2(2);
-		pos -= vec2(1);
-		
-		gl_Position = vec4(pos, 0.0, 1.0 );
-	}
-)_SHAD" },
-	
-#if 0
-/* SHAD_FRAG_TEST_SHOW_ALPHA */ { GL_FRAGMENT_SHADER, R"_SHAD(
-	
-	out vec4			frag_col;
-	
-	void main () {
-		
-		frag_col = vec4(1.0, 1.0, 1.0, 1.0);
-	}
-)_SHAD" },
-#endif
-	
-/* SHAD_FRAG_ACCUM_CLEAR */ { GL_FRAGMENT_SHADER, R"_SHAD(
-	
-	uniform vec3		background_col;
-	
-	out vec4			frag_col;
-	
-	void main () {
-		
-		frag_col = vec4(background_col, 1.0);
-	}
-)_SHAD" },
-	
-/* SHAD_VERT_VERT_LINE */ { GL_VERTEX_SHADER, R"_SHAD(
-	
-	smooth				out float			interp_alpha;
-	
-	void main () {
-		
-		float pos_x_counter = g.vert_line_pos;
-		float pos_x_px = (pos_x_counter -g.view_pos_sec_to_pix) * g.view_scale_sec_to_pix;
-		
-		float width_x_px = 1.25;
-		
-		float line_pos_x_px = 0.0;
-		float alpha = 0.0;
-		
-		float width_half_x_px = width_x_px * 0.5;
-		
+	if (len_x_px >= 1.0) {
 		switch (gl_VertexID >> 1) {
 			case 0:
-				line_pos_x_px = -width_half_x_px -0.5;
+				bar_pos_x_px = -0.5;
 				alpha = 0.0;
 				break;
 			case 1:
-				line_pos_x_px = -width_half_x_px +0.5;
+				bar_pos_x_px = +0.5;
 				alpha = 1.0;
 				break;
 			case 2:
-				line_pos_x_px = +width_half_x_px -0.5;
+				bar_pos_x_px = len_x_px -0.5;
 				alpha = 1.0;
 				break;
 			case 3:
-				line_pos_x_px = +width_half_x_px +0.5;
+				bar_pos_x_px = len_x_px +0.5;
 				alpha = 0.0;
 				break;
 		}
+	} else {
 		
-		pos_x_px += line_pos_x_px;
+		float flat_part_width = 1.0 -len_x_px;
 		
-		int y = (gl_VertexID & 1) ^ 1;
-		
-		gl_Position = vec4( (vec2(pos_x_px / g.fscreen_res.x, float(y)) * vec2(2)) -vec2(1), 0.0, 1.0 );
-		
-		interp_alpha = alpha;
+		switch (gl_VertexID >> 1) {
+			case 0:
+				bar_pos_x_px = (len_x_px / 2.0) -(flat_part_width / 2.0) -len_x_px;
+				alpha = 0.0;
+				break;
+			case 1:
+				bar_pos_x_px = (len_x_px / 2.0) -(flat_part_width / 2.0);
+				alpha = len_x_px;
+				break;
+			case 2:
+				bar_pos_x_px = (len_x_px / 2.0) +(flat_part_width / 2.0);
+				alpha = len_x_px;
+				break;
+			case 3:
+				bar_pos_x_px = (len_x_px / 2.0) +(flat_part_width / 2.0) +len_x_px;
+				alpha = 0.0;
+				break;
+		}
 	}
+	
+	int y = (gl_VertexID & 1) ^ 1;
+	
+	int bar_height = BAR_HEIGHT;
+	if ((attr_type_flags & BT_WAIT) != 0u) {
+		bar_height = LOW_BAR_HEIGHT;
+	}
+	
+	pass_fbar_height = float(bar_height);
+	
+	bar_height *= y;
+	
+	pass_w_px = len_x_px;
+	interp_uv_px = vec2(bar_pos_x_px, float(bar_height));
+	
+	pos_x_px += bar_pos_x_px;
+	
+	float pos_y_px = float( (attr_depth * BAR_OFFS) +bar_height +g.bar_base_offs );
+	
+	gl_Position = vec4( ((vec2(pos_x_px, pos_y_px) / g.fscreen_res) * vec2(2)) -vec2(1), 0.0, 1.0 );
+	
+	pass_col = attr_col;
+	interp_alpha = alpha;
+	
+}
+)_SHAD" },
+
+/* SHAD_FRAG_BARS */ { GL_FRAGMENT_SHADER, R"_SHAD(
+
+flat				in	vec3			pass_col;
+smooth				in	float			interp_alpha;
+
+flat				in	float			pass_fbar_height;
+flat				in	float			pass_w_px;
+smooth				in	vec2			interp_uv_px;
+
+out vec4			frag_col;
+
+bvec2 lte (vec2 l, vec2 r) {
+	return not(greaterThan(l, r));
+}
+
+void main () {
+	//frag_col = vec4(pass_col, interp_alpha);
+	
+	if (	(interp_uv_px.x < 1.2 || interp_uv_px.x > (pass_w_px -1.2)) &&
+			(interp_uv_px.y < 1.2 || interp_uv_px.y > (pass_fbar_height -1.2)) ) {
+		discard;
+	}
+	frag_col = vec4(pass_col, interp_alpha);
+}
+)_SHAD" },
+
+/* SHAD_VERT_FULLSCREEN_QUAD */ { GL_VERTEX_SHADER, R"_SHAD(
+
+void main () {
+	
+	vec2 pos = vec2(gl_VertexID & 1, (gl_VertexID >> 1) & 1);
+	pos *= vec2(2);
+	pos -= vec2(1);
+	
+	gl_Position = vec4(pos, 0.0, 1.0 );
+}
+)_SHAD" },
+
+#if 0
+/* SHAD_FRAG_TEST_SHOW_ALPHA */ { GL_FRAGMENT_SHADER, R"_SHAD(
+
+out vec4			frag_col;
+
+void main () {
+	
+	frag_col = vec4(1.0, 1.0, 1.0, 1.0);
+}
+)_SHAD" },
+#endif
+
+/* SHAD_FRAG_ACCUM_CLEAR */ { GL_FRAGMENT_SHADER, R"_SHAD(
+
+uniform vec3		background_col;
+
+out vec4			frag_col;
+
+void main () {
+	
+	frag_col = vec4(background_col, 1.0);
+}
+)_SHAD" },
+
+/* SHAD_VERT_VERT_LINE */ { GL_VERTEX_SHADER, R"_SHAD(
+
+smooth				out float			interp_alpha;
+
+void main () {
+	
+	float pos_x_counter = g.vert_line_pos;
+	float pos_x_px = (pos_x_counter -g.view_pos_sec_to_pix) * g.view_scale_sec_to_pix;
+	
+	float width_x_px = 1.25;
+	
+	float line_pos_x_px = 0.0;
+	float alpha = 0.0;
+	
+	float width_half_x_px = width_x_px * 0.5;
+	
+	switch (gl_VertexID >> 1) {
+		case 0:
+			line_pos_x_px = -width_half_x_px -0.5;
+			alpha = 0.0;
+			break;
+		case 1:
+			line_pos_x_px = -width_half_x_px +0.5;
+			alpha = 1.0;
+			break;
+		case 2:
+			line_pos_x_px = +width_half_x_px -0.5;
+			alpha = 1.0;
+			break;
+		case 3:
+			line_pos_x_px = +width_half_x_px +0.5;
+			alpha = 0.0;
+			break;
+	}
+	
+	pos_x_px += line_pos_x_px;
+	
+	int y = (gl_VertexID & 1) ^ 1;
+	
+	gl_Position = vec4( (vec2(pos_x_px / g.fscreen_res.x, float(y)) * vec2(2)) -vec2(1), 0.0, 1.0 );
+	
+	interp_alpha = alpha;
+}
 )_SHAD" },
 
 /* SHAD_FRAG_VERT_LINE */ { GL_FRAGMENT_SHADER, R"_SHAD(
-	
-	smooth				in	float			interp_alpha;
-	
-	out vec4			frag_col;
-	
-	void main () {
-		frag_col = vec4(vec3(1.0), interp_alpha * 0.75);
-	}
+
+smooth				in	float			interp_alpha;
+
+out vec4			frag_col;
+
+void main () {
+	frag_col = vec4(vec3(1.0), interp_alpha * 0.75);
+}
 )_SHAD" },
-	
+
 /* SHAD_VERT_BAR_TEXT */ { GL_VERTEX_SHADER, R"_SHAD(
+
+layout(location=0)	in	float			attr_pos_t;
+layout(location=1)	in	float			attr_len_t;
+layout(location=2)	in	int				attr_depth;
+//layout(location=3)	in	uint			attr_type_flags;
+layout(location=4)	in	int				attr_name_offs;
+layout(location=5)	in	int				attr_name_len;
+//layout(location=6)	in	vec3			attr_col;
+
+flat				out int				pass_name_offs;
+smooth				out vec2			interp_uv;
+
+const int	TEXT_X_BORD =		2;
+const int	NAME_LOWER_BORD =	3;
+
+void main () {
+	float fglyph_x_dim = float(GLYPH_DIM.x);
 	
-	layout(location=0)	in	float			attr_pos_t;
-	layout(location=1)	in	float			attr_len_t;
-	layout(location=2)	in	int				attr_depth;
-	//layout(location=3)	in	uint			attr_type_flags;
-	layout(location=4)	in	int				attr_name_offs;
-	layout(location=5)	in	int				attr_name_len;
-	//layout(location=6)	in	vec3			attr_col;
+	float pos_x_counter = attr_pos_t * g.units_counter_to_sec;
+	float pos_x_px = (pos_x_counter -g.view_pos_sec_to_pix) * g.view_scale_sec_to_pix;
 	
-	flat				out int				pass_name_offs;
-	smooth				out vec2			interp_uv;
+	float len_x_px = attr_len_t * g.units_counter_to_sec * g.view_scale_sec_to_pix;
 	
-	const int	TEXT_X_BORD =		2;
-	const int	NAME_LOWER_BORD =	3;
+	vec2 pos_quad = vec2(gl_VertexID & 1, (gl_VertexID >> 1) & 1);
 	
-	void main () {
+	float end_x_px = pos_x_px +len_x_px;
+	
+	pos_x_px += float(TEXT_X_BORD);
+	end_x_px -= float(TEXT_X_BORD);
+	
+	pos_x_px = max(pos_x_px, 0.0);
+	
+	len_x_px = end_x_px -pos_x_px;
+	len_x_px = clamp(len_x_px, 0.0, float(attr_name_len) * fglyph_x_dim) * pos_quad.x;
+	
+	pos_x_px += len_x_px;
+	
+	interp_uv = vec2(len_x_px / fglyph_x_dim, pos_quad.y);
+	
+	float pos_y_px = float( (attr_depth * BAR_OFFS) +g.bar_base_offs
+			+NAME_LOWER_BORD +(pos_quad.y * GLYPH_DIM.y) );
+	
+	gl_Position = vec4( ((vec2(pos_x_px, pos_y_px) / g.fscreen_res) * vec2(2)) -vec2(1), 0.0, 1.0 );
+	
+	pass_name_offs = attr_name_offs;
+}
+)_SHAD" },
+
+/* SHAD_FRAG_BAR_TEXT */ { GL_FRAGMENT_SHADER, R"_SHAD(
+
+flat				in	int				pass_name_offs;
+smooth				in	vec2			interp_uv;
+
+					uniform isamplerBuffer	text_data_tex;
+					uniform sampler2D		glyphs_tex;
+					
+out vec4			frag_col;
+
+void main () {
+	
+	int char_indx = int(interp_uv.x);
+	
+	int glyph_code = texelFetch(text_data_tex, pass_name_offs +char_indx).r;
+	
+	vec2 glyph_uv = vec2(0);
+	if (glyph_code < 128) {
+		glyph_uv.y = float(glyph_code / 16);
+		glyph_uv.x = float(glyph_code % 16);
+	}
+	glyph_uv.x += fract(interp_uv.x);
+	glyph_uv.y += interp_uv.y;
+	
+	glyph_uv /= vec2(GLYPH_TEX_COUNTS);
+	
+	frag_col = vec4(TEXT_FG_COL, texture(glyphs_tex, glyph_uv).r);
+	//frag_col = vec4(TEXT_FG_COL * texture(glyphs_tex, glyph_uv).r, max(texture(glyphs_tex, glyph_uv).r, 0.25));
+}
+)_SHAD" },
+
+/* SHAD_VERT_BAR_DURATION_TEXT */ { GL_VERTEX_SHADER, R"_SHAD(
+
+layout(location=0)	in	float			attr_pos_t;
+layout(location=1)	in	float			attr_len_t;
+layout(location=2)	in	int				attr_depth;
+layout(location=3)	in	uint			attr_type_flags;
+//layout(location=4)	in	int				attr_name_offs;
+//layout(location=5)	in	int				attr_name_len;
+//layout(location=6)	in	vec3			attr_col;
+
+flat				out uvec3			pass_chars;
+smooth				out vec2			interp_uv;
+
+const int	TEXT_X_BORD =		2;
+const int	NAME_LOWER_BORD =	3;
+
+void main () {
+	
+	if ((attr_type_flags & BT_WAIT) != 0u) {
+		gl_Position = vec4(0);
+	} else {
+		
 		float fglyph_x_dim = float(GLYPH_DIM.x);
 		
 		float pos_x_counter = attr_pos_t * g.units_counter_to_sec;
 		float pos_x_px = (pos_x_counter -g.view_pos_sec_to_pix) * g.view_scale_sec_to_pix;
+		
+		uint len = uint(8 +2);
+		{
+			float val = attr_len_t * g.units_counter_to_sec;
+			if (		val < (1.0 / 1000 / 1000) ) {
+				val *= 1000.0 * 1000 * 1000;
+				pass_chars[2] = uint(0x736e); // "ns"
+			} else if ( val < (1.0 / 1000) ) {
+				val *= 1000.0 * 1000;
+				pass_chars[2] = uint(0x7375); // "us"
+			} else if ( val < 1.0 ) {
+				val *= 1000.0;
+				pass_chars[2] = uint(0x736d); // "ms"
+			} else if ( val < 60.0 ) {
+				// do nothing
+				pass_chars[2] = uint(0x636573); // "sec"
+				len += 1u;
+			} else {
+				val *= 1.0 / 60;
+				pass_chars[2] = uint(0x6e696d); // "min"
+				len += 1u;
+			}
+			
+			val = round(val * 1000.0) * (1.0 / 1000.0); // round to 3 digits after decimal point
+			
+			pass_chars[0] =		(uint(val * (1.0 / 1000.0)) %	uint(10));
+			pass_chars[0] |=	(uint(val * (1.0 / 100.0)) %	uint(10)) << 8;
+			pass_chars[0] |=	(uint(val * (1.0 / 10.0)) %		uint(10)) << 16;
+			pass_chars[0] |=	(uint(val) %					uint(10)) << 24;
+			pass_chars[1] =		 uint(0x2E); // '.'
+			pass_chars[1] |=	(uint(val * 10.0) %				uint(10)) << 8;
+			pass_chars[1] |=	(uint(val * 100.0) %			uint(10)) << 16;
+			pass_chars[1] |=	(uint(val * 1000.0) %			uint(10)) << 24;
+			
+			pass_chars += uvec3(0x30303030, 0x30303000, 0);
+		}
 		
 		float len_x_px = attr_len_t * g.units_counter_to_sec * g.view_scale_sec_to_pix;
 		
@@ -665,255 +785,134 @@ R"_SHAD(
 		pos_x_px = max(pos_x_px, 0.0);
 		
 		len_x_px = end_x_px -pos_x_px;
-		len_x_px = clamp(len_x_px, 0.0, float(attr_name_len) * fglyph_x_dim) * pos_quad.x;
+		len_x_px = clamp(len_x_px, 0.0, float(len) * fglyph_x_dim) * pos_quad.x;
 		
 		pos_x_px += len_x_px;
 		
 		interp_uv = vec2(len_x_px / fglyph_x_dim, pos_quad.y);
 		
 		float pos_y_px = float( (attr_depth * BAR_OFFS) +g.bar_base_offs
-				+NAME_LOWER_BORD +(pos_quad.y * GLYPH_DIM.y) );
+				+(BAR_HEIGHT -NAME_LOWER_BORD -GLYPH_DIM.y) +(pos_quad.y * GLYPH_DIM.y) );
 		
 		gl_Position = vec4( ((vec2(pos_x_px, pos_y_px) / g.fscreen_res) * vec2(2)) -vec2(1), 0.0, 1.0 );
-		
-		pass_name_offs = attr_name_offs;
 	}
+}
 )_SHAD" },
+
+/* SHAD_FRAG_BAR_DURATION_TEXT */ { GL_FRAGMENT_SHADER, R"_SHAD(
+
+flat				in	uvec3			pass_chars;
+smooth				in	vec2			interp_uv;
+
+					uniform sampler2D		glyphs_tex;
+					
+out vec4			frag_col;
+
+void main () {
 	
-/* SHAD_FRAG_BAR_TEXT */ { GL_FRAGMENT_SHADER, R"_SHAD(
+	int char_indx = int(interp_uv.x);
 	
-	flat				in	int				pass_name_offs;
-	smooth				in	vec2			interp_uv;
+	int glyph_code = int((pass_chars[char_indx / 4] >> ((char_indx % 4) * 8)) & uint(0xff));
 	
+	vec2 glyph_uv = vec2(0);
+	if (glyph_code < 128) {
+		glyph_uv.y = float(glyph_code / 16);
+		glyph_uv.x = float(glyph_code % 16);
+	}
+	glyph_uv.x += fract(interp_uv.x);
+	glyph_uv.y += interp_uv.y;
+	
+	glyph_uv /= vec2(GLYPH_TEX_COUNTS);
+	
+	frag_col = vec4(TEXT_FG_COL, texture(glyphs_tex, glyph_uv).r);
+	//frag_col = vec4(TEXT_FG_COL * texture(glyphs_tex, glyph_uv).r, max(texture(glyphs_tex, glyph_uv).r, 0.25));
+}
+)_SHAD" },
+
+/* SHAD_VERT_FREE_TEXT */ { GL_VERTEX_SHADER, R"_SHAD(
+
+smooth					out vec2			pass_uv;
+
+void main () {
+	vec2 fglyph_dim = vec2(GLYPH_DIM);
+	
+	vec2 quad_pos = vec2(gl_VertexID & 1, (gl_VertexID >> 1) & 1);
+	
+	float clipped_len = min(float(g.str_len), g.str_clip_x / fglyph_dim.x);
+	
+	pass_uv = quad_pos * vec2(clipped_len, 1.0);
+	
+	vec2 pos = vec2(g.pos);
+	pos += pass_uv * fglyph_dim;
+	
+	gl_Position = vec4( ((pos / g.fscreen_res) * vec2(2)) -vec2(1), 0.0, 1.0);
+}
+)_SHAD" },
+
+/* SHAD_FRAG_FREE_TEXT */ { GL_FRAGMENT_SHADER, R"_SHAD(
+
+smooth					in	vec2			pass_uv;
+
 						uniform isamplerBuffer	text_data_tex;
 						uniform sampler2D		glyphs_tex;
 						
-	out vec4			frag_col;
+						out vec4			frag_col;
+
+void main () {
 	
-	void main () {
-		
-		int char_indx = int(interp_uv.x);
-		
-		int glyph_code = texelFetch(text_data_tex, pass_name_offs +char_indx).r;
-		
-		vec2 glyph_uv = vec2(0);
-		if (glyph_code < 128) {
-			glyph_uv.y = float(glyph_code / 16);
-			glyph_uv.x = float(glyph_code % 16);
-		}
-		glyph_uv.x += fract(interp_uv.x);
-		glyph_uv.y += interp_uv.y;
-		
-		glyph_uv /= vec2(GLYPH_TEX_COUNTS);
-		
-		frag_col = vec4(TEXT_FG_COL, texture(glyphs_tex, glyph_uv).r);
-		//frag_col = vec4(TEXT_FG_COL * texture(glyphs_tex, glyph_uv).r, max(texture(glyphs_tex, glyph_uv).r, 0.25));
+	int char_indx = int(pass_uv.x);
+	
+	int glyph_code = texelFetch(text_data_tex, char_indx).r;
+	
+	vec2 glyph_uv = vec2(0);
+	if (glyph_code < 128) {
+		glyph_uv.y = float(glyph_code / 16);
+		glyph_uv.x = float(glyph_code % 16);
 	}
+	glyph_uv.x += fract(pass_uv.x);
+	glyph_uv.y += pass_uv.y;
+	
+	glyph_uv /= vec2(GLYPH_TEX_COUNTS);
+	
+	//frag_col = vec4(glyph_uv, 0.0, 1.0);
+	
+	//frag_col = vec4(0.0, 1.0, 0.0, 1.0);
+	frag_col = vec4(TEXT_FG_COL, texture(glyphs_tex, glyph_uv).r);
+}
+
 )_SHAD" },
-	
-/* SHAD_VERT_BAR_DURATION_TEXT */ { GL_VERTEX_SHADER, R"_SHAD(
-	
-	layout(location=0)	in	float			attr_pos_t;
-	layout(location=1)	in	float			attr_len_t;
-	layout(location=2)	in	int				attr_depth;
-	layout(location=3)	in	uint			attr_type_flags;
-	//layout(location=4)	in	int				attr_name_offs;
-	//layout(location=5)	in	int				attr_name_len;
-	//layout(location=6)	in	vec3			attr_col;
-	
-	flat				out uvec3			pass_chars;
-	smooth				out vec2			interp_uv;
-	
-	const int	TEXT_X_BORD =		2;
-	const int	NAME_LOWER_BORD =	3;
-	
-	void main () {
-		
-		if ((attr_type_flags & BT_WAIT) != 0u) {
-			gl_Position = vec4(0);
-		} else {
-			
-			float fglyph_x_dim = float(GLYPH_DIM.x);
-			
-			float pos_x_counter = attr_pos_t * g.units_counter_to_sec;
-			float pos_x_px = (pos_x_counter -g.view_pos_sec_to_pix) * g.view_scale_sec_to_pix;
-			
-			uint len = uint(8 +2);
-			{
-				float val = attr_len_t * g.units_counter_to_sec;
-				if (		val < (1.0 / 1000 / 1000) ) {
-					val *= 1000.0 * 1000 * 1000;
-					pass_chars[2] = uint(0x736e); // "ns"
-				} else if ( val < (1.0 / 1000) ) {
-					val *= 1000.0 * 1000;
-					pass_chars[2] = uint(0x7375); // "us"
-				} else if ( val < 1.0 ) {
-					val *= 1000.0;
-					pass_chars[2] = uint(0x736d); // "ms"
-				} else if ( val < 60.0 ) {
-					// do nothing
-					pass_chars[2] = uint(0x636573); // "sec"
-					len += 1u;
-				} else {
-					val *= 1.0 / 60;
-					pass_chars[2] = uint(0x6e696d); // "min"
-					len += 1u;
-				}
-				
-				val = round(val * 1000.0) * (1.0 / 1000.0); // round to 3 digits after decimal point
-				
-				pass_chars[0] =		(uint(val * (1.0 / 1000.0)) %	uint(10));
-				pass_chars[0] |=	(uint(val * (1.0 / 100.0)) %	uint(10)) << 8;
-				pass_chars[0] |=	(uint(val * (1.0 / 10.0)) %		uint(10)) << 16;
-				pass_chars[0] |=	(uint(val) %					uint(10)) << 24;
-				pass_chars[1] =		 uint(0x2E); // '.'
-				pass_chars[1] |=	(uint(val * 10.0) %				uint(10)) << 8;
-				pass_chars[1] |=	(uint(val * 100.0) %			uint(10)) << 16;
-				pass_chars[1] |=	(uint(val * 1000.0) %			uint(10)) << 24;
-				
-				pass_chars += uvec3(0x30303030, 0x30303000, 0);
-			}
-			
-			float len_x_px = attr_len_t * g.units_counter_to_sec * g.view_scale_sec_to_pix;
-			
-			vec2 pos_quad = vec2(gl_VertexID & 1, (gl_VertexID >> 1) & 1);
-			
-			float end_x_px = pos_x_px +len_x_px;
-			
-			pos_x_px += float(TEXT_X_BORD);
-			end_x_px -= float(TEXT_X_BORD);
-			
-			pos_x_px = max(pos_x_px, 0.0);
-			
-			len_x_px = end_x_px -pos_x_px;
-			len_x_px = clamp(len_x_px, 0.0, float(len) * fglyph_x_dim) * pos_quad.x;
-			
-			pos_x_px += len_x_px;
-			
-			interp_uv = vec2(len_x_px / fglyph_x_dim, pos_quad.y);
-			
-			float pos_y_px = float( (attr_depth * BAR_OFFS) +g.bar_base_offs
-					+(BAR_HEIGHT -NAME_LOWER_BORD -GLYPH_DIM.y) +(pos_quad.y * GLYPH_DIM.y) );
-			
-			gl_Position = vec4( ((vec2(pos_x_px, pos_y_px) / g.fscreen_res) * vec2(2)) -vec2(1), 0.0, 1.0 );
-		}
-	}
-)_SHAD" },
-	
-/* SHAD_FRAG_BAR_DURATION_TEXT */ { GL_FRAGMENT_SHADER, R"_SHAD(
-	
-	flat				in	uvec3			pass_chars;
-	smooth				in	vec2			interp_uv;
-	
-						uniform sampler2D		glyphs_tex;
-						
-	out vec4			frag_col;
-	
-	void main () {
-		
-		int char_indx = int(interp_uv.x);
-		
-		int glyph_code = int((pass_chars[char_indx / 4] >> ((char_indx % 4) * 8)) & uint(0xff));
-		
-		vec2 glyph_uv = vec2(0);
-		if (glyph_code < 128) {
-			glyph_uv.y = float(glyph_code / 16);
-			glyph_uv.x = float(glyph_code % 16);
-		}
-		glyph_uv.x += fract(interp_uv.x);
-		glyph_uv.y += interp_uv.y;
-		
-		glyph_uv /= vec2(GLYPH_TEX_COUNTS);
-		
-		frag_col = vec4(TEXT_FG_COL, texture(glyphs_tex, glyph_uv).r);
-		//frag_col = vec4(TEXT_FG_COL * texture(glyphs_tex, glyph_uv).r, max(texture(glyphs_tex, glyph_uv).r, 0.25));
-	}
-)_SHAD" },
-	
-/* SHAD_VERT_FREE_TEXT */ { GL_VERTEX_SHADER, R"_SHAD(
-	
-	smooth					out vec2			pass_uv;
-	
-	void main () {
-		vec2 fglyph_dim = vec2(GLYPH_DIM);
-		
-		vec2 quad_pos = vec2(gl_VertexID & 1, (gl_VertexID >> 1) & 1);
-		
-		float clipped_len = min(float(g.str_len), g.str_clip_x / fglyph_dim.x);
-		
-		pass_uv = quad_pos * vec2(clipped_len, 1.0);
-		
-		vec2 pos = vec2(g.pos);
-		pos += pass_uv * fglyph_dim;
-		
-		gl_Position = vec4( ((pos / g.fscreen_res) * vec2(2)) -vec2(1), 0.0, 1.0);
-	}
-)_SHAD" },
-	
-/* SHAD_FRAG_FREE_TEXT */ { GL_FRAGMENT_SHADER, R"_SHAD(
-	
-	smooth					in	vec2			pass_uv;
-	
-							uniform isamplerBuffer	text_data_tex;
-							uniform sampler2D		glyphs_tex;
-							
-							out vec4			frag_col;
-	
-	void main () {
-		
-		int char_indx = int(pass_uv.x);
-		
-		int glyph_code = texelFetch(text_data_tex, char_indx).r;
-		
-		vec2 glyph_uv = vec2(0);
-		if (glyph_code < 128) {
-			glyph_uv.y = float(glyph_code / 16);
-			glyph_uv.x = float(glyph_code % 16);
-		}
-		glyph_uv.x += fract(pass_uv.x);
-		glyph_uv.y += pass_uv.y;
-		
-		glyph_uv /= vec2(GLYPH_TEX_COUNTS);
-		
-		//frag_col = vec4(glyph_uv, 0.0, 1.0);
-		
-		//frag_col = vec4(0.0, 1.0, 0.0, 1.0);
-		frag_col = vec4(TEXT_FG_COL, texture(glyphs_tex, glyph_uv).r);
-	}
-	
-)_SHAD" },
-	
-	};
-	
-	// Programs
-	enum prog_id_e: u32 {
-		PROG_BARS=0,
-		PROG_ACCUM_CLEAR,
-		//PROG_TEST_SHOW_ALPHA,
-		PROG_VERT_LINE,
-		PROG_BAR_TEXT,
-		PROG_BAR_DURATION_TEXT,
-		PROG_FREE_TEXT,
-		PROG_COUNT,
-	};
-	DEFINE_ENUM_ITER_OPS(prog_id_e, u32)
-	
-	constexpr ui MAX_SHAD_PER_PROG = 2;
-	
-	struct Program {
-		shad_id_e	shaders[MAX_SHAD_PER_PROG];
-	};
-	
-	constexpr Program PROGRAMS[PROG_COUNT] = {
-		/* PROG_BARS */ { { SHAD_VERT_BARS, SHAD_FRAG_BARS } },
-		/* PROG_ACCUM_CLEAR */ { { SHAD_VERT_FULLSCREEN_QUAD, SHAD_FRAG_ACCUM_CLEAR } },
-		///* PROG_TEST_SHOW_ALPHA */ { { SHAD_VERT_FULLSCREEN_QUAD, SHAD_FRAG_TEST_SHOW_ALPHA } },
-		/* PROG_VERT_LINE */ { { SHAD_VERT_VERT_LINE, SHAD_FRAG_VERT_LINE } },
-		/* PROG_BAR_TEXT */ { { SHAD_VERT_BAR_TEXT, SHAD_FRAG_BAR_TEXT } },
-		/* PROG_BAR_DURATION_TEXT */ { { SHAD_VERT_BAR_DURATION_TEXT, SHAD_FRAG_BAR_DURATION_TEXT } },
-		/* PROG_FREE_TEXT */ { { SHAD_VERT_FREE_TEXT, SHAD_FRAG_FREE_TEXT } },
-	};
-	
+
+};
+
+// Programs
+enum prog_id_e: u32 {
+	PROG_BARS=0,
+	PROG_ACCUM_CLEAR,
+	//PROG_TEST_SHOW_ALPHA,
+	PROG_VERT_LINE,
+	PROG_BAR_TEXT,
+	PROG_BAR_DURATION_TEXT,
+	PROG_FREE_TEXT,
+	PROG_COUNT,
+};
+DEFINE_ENUM_ITER_OPS(prog_id_e, u32)
+
+constexpr ui MAX_SHAD_PER_PROG = 2;
+
+struct Program {
+	shad_id_e	shaders[MAX_SHAD_PER_PROG];
+};
+
+constexpr Program PROGRAMS[PROG_COUNT] = {
+	/* PROG_BARS */ { { SHAD_VERT_BARS, SHAD_FRAG_BARS } },
+	/* PROG_ACCUM_CLEAR */ { { SHAD_VERT_FULLSCREEN_QUAD, SHAD_FRAG_ACCUM_CLEAR } },
+	///* PROG_TEST_SHOW_ALPHA */ { { SHAD_VERT_FULLSCREEN_QUAD, SHAD_FRAG_TEST_SHOW_ALPHA } },
+	/* PROG_VERT_LINE */ { { SHAD_VERT_VERT_LINE, SHAD_FRAG_VERT_LINE } },
+	/* PROG_BAR_TEXT */ { { SHAD_VERT_BAR_TEXT, SHAD_FRAG_BAR_TEXT } },
+	/* PROG_BAR_DURATION_TEXT */ { { SHAD_VERT_BAR_DURATION_TEXT, SHAD_FRAG_BAR_DURATION_TEXT } },
+	/* PROG_FREE_TEXT */ { { SHAD_VERT_FREE_TEXT, SHAD_FRAG_FREE_TEXT } },
+};
+
 GLuint compile_shader (shad_id_e shad_id) {
 	
 	auto in_shad = SHADERS[shad_id];
@@ -1105,7 +1104,7 @@ GLuint link_program (prog_id_e prog_id, GLuint const* shaders) {
 	
 	return prog;
 };
-	
+
 void setup_shaders (GLuint* programs) {
 	
 	GLuint shaders[SHAD_COUNT];
@@ -1155,7 +1154,7 @@ void setup_shaders (GLuint* programs) {
 		glDeleteShader(shaders[i]);
 	}
 }
-	
+
 namespace bmp {
 	constexpr union {
 		char	str[2];
@@ -1304,259 +1303,298 @@ namespace bmp {
 		return true;
 	}
 }
-	
+
 ////
-	DECLD u64						qpc_dt;
-	DECLD f32						dt;
-	DECLD uptr						frame_number;
+DECLD u64						qpc_dt;
+DECLD f32						dt;
+DECLD uptr						frame_number;
+
+DECLD input::State				inp;
+DECLD input::Sync_Input			sinp = {}; // init window_res to zero
+
+////
+DECLD constexpr v3				BACKGROUND_COL =			v3(41, 49, 52) / v3(255);
+DECLD constexpr	u32				THREADS_DYNARR_CAP =		8;
+DECLD constexpr	u32				LEVELS_DYNARR_CAP =			32;
+DECLD constexpr	u32				BLOCKS_DYNARR_CAP =			16 * 1024; // per thread
+DECLD constexpr	u32				UNIQUE_BLOCKS_DYNARR_CAP =	256;
+
+DECLD GLuint					VBOs[VBO_COUNT];
+DECLD GLuint					VAOs[VAO_COUNT];
+
+DECLD GLuint					shaders[PROG_COUNT];
+
+DECLD GLuint					samplers[SAMPL_COUNT];
+DECLD GLuint					textures[TEX_COUNT];
+
+#include "flamegraph_data_file.h"
+
+struct Node {
+	u32					parent;
+	u32					children;
+	u32					next;
 	
-	DECLD input::State				inp;
-	DECLD input::Sync_Input			sinp = {}; // init window_res to zero
+	u64					begin;
+	u64					length;
+	lstr				name;
+	u32					index;
+	block_type_flags_e	flags;
 	
-	////
-	DECLD constexpr v3				BACKGROUND_COL =			v3(41, 49, 52) / v3(255);
-	DECLD constexpr	u32				THREADS_DYNARR_CAP =		8;
-	DECLD constexpr	u32				LEVELS_DYNARR_CAP =			32;
-	DECLD constexpr	u32				BLOCKS_DYNARR_CAP =			16 * 1024; // per thread
-	DECLD constexpr	u32				UNIQUE_BLOCKS_DYNARR_CAP =	256;
-	
-	DECLD GLuint					VBOs[VBO_COUNT];
-	DECLD GLuint					VAOs[VAO_COUNT];
-	
-	DECLD GLuint					shaders[PROG_COUNT];
-	
-	DECLD GLuint					samplers[SAMPL_COUNT];
-	DECLD GLuint					textures[TEX_COUNT];
-	
-	#include "flamegraph_data_file.h"
-	
-	struct Node {
-		u32					parent;
-		u32					children;
-		u32					next;
+	void init_root () {
+		parent =	0;
+		children =	0;
+		next =		0;
 		
-		u64					begin;
-		u64					length;
-		lstr				name;
-		u32					index;
-		block_type_flags_e	flags;
-		
-		void init_root () {
-			parent =	0;
-			children =	0;
-			next =		0;
-			
-			begin =		0;
-			length =	-1;
-			name =		"<root>";
-			index =		0;
-			flags =		BT_NONE;
-		}
-		
-	};
-	
-	block_type_flags_e get_flags_and_name (lstr name, lstr* out_remain_name) {
-		block_type_flags_e	flags = BT_NONE;
-		lstr remain_name = name;
-		
-		cstr cur = remain_name.str;
-		while (*cur != '\0' && *cur != ':') ++cur;
-		
-		if (*cur == ':') {
-			lstr flag = lstr(remain_name.str, ptr_sub(remain_name.str, cur));
-			
-			remain_name.str = cur +1;
-			remain_name.len -= flag.len +1;
-			
-			if (str::comp(flag, "WAIT")) {
-				flags |= BT_WAIT;
-			} else {
-				warning("unknown flag '%' in event '%'", flag, name);
-			}
-		}
-		
-		*out_remain_name = remain_name;
-		return flags;
+		begin =		0;
+		length =	-1;
+		name =		"<root>";
+		index =		0;
+		flags =		BT_NONE;
 	}
 	
-	lstr add_str (lstr s);
+};
+
+block_type_flags_e get_flags_and_name (lstr name, lstr* out_remain_name) {
+	block_type_flags_e	flags = BT_NONE;
+	lstr remain_name = name;
 	
-	struct Thread {
-		f32					unit_to_sec;
-		f32					sec_to_unit;
-		
-		lstr				name;
-		
-		GLuint				VBO;
-		GLuint				VAO;
-		
-		dynarr<Node>		tree_storage;
-		dynarr<u32>			prev_stk;
-		u32					cur_level;
-		
-		u32 get_block_count () const {
-			return tree_storage.len -1;
-		}
-		
-		void open (lstr name, u32 index, u64 ts) {
-			auto n_i = tree_storage.len;
-			auto* n = &tree_storage.append();
-			
-			auto paren_i = prev_stk[cur_level];
-			auto* paren = &tree_storage[paren_i];
-			
-			if (paren->children == 0) {
-				paren->children = n_i;
-			}
-			
-			n->parent =			paren_i;
-			n->children =		0;
-			#if DEBUG
-			n->next =			-1;
-			#endif
-			
-			if (prev_stk.len == ++cur_level) {
-				prev_stk.push(0); // no prev exists
-			} else {
-				
-				auto prev_i = prev_stk[cur_level];
-				if (prev_i != 0) {
-					auto* prev = &tree_storage[prev_i];
-					
-					prev->next =	n_i;
-				}
-			}
-			prev_stk[cur_level] = n_i;
-			
-			
-			n->begin =			ts;
-			#if DEBUG
-			n->length =			-1;
-			#endif
-			
-			n->index =			index;
-			
-			{
-				lstr remain_name;
-				n->flags = get_flags_and_name(name, &remain_name);
-				
-				lstr in_tbl = add_str(remain_name);
-				n->name =		in_tbl;
-			}
-			
-		}
-		void close (lstr name, u32 index, u64 ts) {
-			auto me_i = prev_stk[cur_level];
-			auto* me = &tree_storage[me_i];
-			assert(me_i != 0 && cur_level > 0); // close() without prior open()
-			
-			assert(prev_stk.len <= cur_level +2);
-			if (prev_stk.len > cur_level +1) {
-				prev_stk.pop();
-			}
-			
-			--cur_level;
-			
-			me->length = ts -me->begin;
-			me->next = 0;
-			
-			{
-				lstr remain_name;
-				auto flags = get_flags_and_name(name, &remain_name);
-				
-				assert(str::comp(remain_name, me->name));
-				assert(flags == me->flags);
-			}
-			
-			if (index != me->index) {
-				warning("NOTE: block open and close for '%' have differing index data (open: % close: %)",
-					name, me->index, index);
-			}
-			
-		}
-		void step (lstr name, u32 index, u64 ts) {
-			auto n_i = tree_storage.len;
-			auto* n = &tree_storage.append();
-			
-			auto closee_i = prev_stk[cur_level];
-			auto* closee = &tree_storage[closee_i];
-			assert(closee_i != 0 && cur_level > 0); // step() without prior open()
-			
-			assert(prev_stk.len <= cur_level +2);
-			if (prev_stk.len > cur_level +1) {
-				prev_stk.pop();
-			}
-			
-			closee->length = ts -closee->begin;
-			
-			assert(str::comp(name, closee->name));
-			
-			
-			auto paren_i = prev_stk[cur_level -1];
-			
-			n->parent =			paren_i;
-			n->children =		0;
-			#if DEBUG
-			n->next =			-1;
-			#endif
-			
-			closee->next =		n_i;
-			prev_stk[cur_level] = n_i;
-			
-			
-			n->begin =			ts;
-			#if DEBUG
-			n->length =			-1;
-			#endif
-			
-			n->name =			closee->name;
-			n->index =			index;
-			n->flags =			closee->flags;
-			
-		}
-		
-		template <typename FUNC>
-		void _depth_first (FUNC f, Node& n, u32 depth) {
-			
-			f(n, depth);
-			
-			u32 c = n.children;
-			while (c != 0) {
-				auto& node = tree_storage[c];
-				_depth_first(f, node, depth +1);
-				
-				c = node.next;
-			}
-		}
-		
-		template <typename FUNC>
-		void traverse_depth_first (FUNC f) {
-			u32 c = tree_storage[0].children;
-			while (c != 0) {
-				auto& node = tree_storage[c];
-				_depth_first(f, node, 0);
-				
-				c = node.next;
-			}
-		}
-		
-	};
+	cstr cur = remain_name.str;
+	while (*cur != '\0' && *cur != ':') ++cur;
 	
-	dynarr<Thread>	threads;
-	array<char>		blocks_str_storage; // on working_stk
-	dynarr<lstr>	blocks_strs;
-	
-	u32				total_block_count;
-	
-	lstr add_str (lstr s) {
-		for (u32 i=0; i<blocks_strs.len; ++i) {
-			if (str::comp(blocks_strs[i], s)) return blocks_strs[i]; // already present
+	if (*cur == ':') {
+		lstr flag = lstr(remain_name.str, ptr_sub(remain_name.str, cur));
+		
+		remain_name.str = cur +1;
+		remain_name.len -= flag.len +1;
+		
+		if (str::comp(flag, "WAIT")) {
+			flags |= BT_WAIT;
+		} else {
+			warning("unknown flag '%' in event '%'", flag, name);
 		}
-		lstr ret = str::append_term(&working_stk, s);
-		blocks_strs.append(ret);
-		return ret;
 	}
 	
+	*out_remain_name = remain_name;
+	return flags;
+}
+
+lstr add_str (lstr s);
+
+struct Gl_Buf {
+	GLuint		VBO;
+	GLuint		VAO;
+	
+	// CAUTION: Remember to glBindVertexArray(0) after using this function 
+	void gl_bars_vao () {
+		glBindVertexArray(VAO);
+		
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		glEnableVertexAttribArray(2);
+		glEnableVertexAttribArray(3);
+		glEnableVertexAttribArray(4);
+		glEnableVertexAttribArray(5);
+		glEnableVertexAttribArray(6);
+		
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		
+		auto vert_size = safe_cast_assert(GLsizei, sizeof(std140_Bar));
+		
+		glVertexAttribPointer(	0, 1, GL_FLOAT, GL_FALSE, vert_size,		(void*)offsetof(std140_Bar, pos_t) );
+		glVertexAttribPointer(	1, 1, GL_FLOAT, GL_FALSE, vert_size,		(void*)offsetof(std140_Bar, len_t) );
+		glVertexAttribIPointer( 2, 1, GL_INT, vert_size,					(void*)offsetof(std140_Bar, depth) );
+		glVertexAttribIPointer( 3, 1, GL_UNSIGNED_INT, vert_size,			(void*)offsetof(std140_Bar, type_flags) );
+		glVertexAttribIPointer( 4, 1, GL_INT, vert_size,					(void*)offsetof(std140_Bar, name_offs) );
+		glVertexAttribIPointer( 5, 1, GL_INT, vert_size,					(void*)offsetof(std140_Bar, name_len) );
+		glVertexAttribPointer(	6, 3, GL_UNSIGNED_BYTE, GL_TRUE, vert_size, (void*)offsetof(std140_Bar, col) );
+		
+		glVertexAttribDivisor(0, 1);
+		glVertexAttribDivisor(1, 1);
+		glVertexAttribDivisor(2, 1);
+		glVertexAttribDivisor(3, 1);
+		glVertexAttribDivisor(4, 1);
+		glVertexAttribDivisor(5, 1);
+		glVertexAttribDivisor(6, 1);
+	}
+	
+};
+
+struct Thread {
+	f32					unit_to_sec;
+	f32					sec_to_unit;
+	
+	lstr				name;
+	
+	//dynarr<Gl_Buf>		gl_bufs;
+	Gl_Buf				gl_buf;
+	
+	dynarr<Node>		tree_storage;
+	dynarr<u32>			prev_stk;
+	u32					cur_level;
+	
+	u32 get_block_count () const {
+		return tree_storage.len -1;
+	}
+	
+	void open (lstr name, u32 index, u64 ts) {
+		auto n_i = tree_storage.len;
+		auto* n = &tree_storage.append();
+		
+		auto paren_i = prev_stk[cur_level];
+		auto* paren = &tree_storage[paren_i];
+		
+		if (paren->children == 0) {
+			paren->children = n_i;
+		}
+		
+		n->parent =			paren_i;
+		n->children =		0;
+		#if DEBUG
+		n->next =			-1;
+		#endif
+		
+		if (prev_stk.len == ++cur_level) {
+			prev_stk.push(0); // no prev exists
+		} else {
+			
+			auto prev_i = prev_stk[cur_level];
+			if (prev_i != 0) {
+				auto* prev = &tree_storage[prev_i];
+				
+				prev->next =	n_i;
+			}
+		}
+		prev_stk[cur_level] = n_i;
+		
+		
+		n->begin =			ts;
+		#if DEBUG
+		n->length =			-1;
+		#endif
+		
+		n->index =			index;
+		
+		{
+			lstr remain_name;
+			n->flags = get_flags_and_name(name, &remain_name);
+			
+			lstr in_tbl = add_str(remain_name);
+			n->name =		in_tbl;
+		}
+		
+	}
+	void close (lstr name, u32 index, u64 ts) {
+		auto me_i = prev_stk[cur_level];
+		auto* me = &tree_storage[me_i];
+		assert(me_i != 0 && cur_level > 0); // close() without prior open()
+		
+		assert(prev_stk.len <= cur_level +2);
+		if (prev_stk.len > cur_level +1) {
+			prev_stk.pop();
+		}
+		
+		--cur_level;
+		
+		me->length = ts -me->begin;
+		me->next = 0;
+		
+		{
+			lstr remain_name;
+			auto flags = get_flags_and_name(name, &remain_name);
+			
+			assert(str::comp(remain_name, me->name));
+			assert(flags == me->flags);
+		}
+		
+		if (index != me->index) {
+			warning("NOTE: block open and close for '%' have differing index data (open: % close: %)",
+				name, me->index, index);
+		}
+		
+	}
+	void step (lstr name, u32 index, u64 ts) {
+		auto n_i = tree_storage.len;
+		auto* n = &tree_storage.append();
+		
+		auto closee_i = prev_stk[cur_level];
+		auto* closee = &tree_storage[closee_i];
+		assert(closee_i != 0 && cur_level > 0); // step() without prior open()
+		
+		assert(prev_stk.len <= cur_level +2);
+		if (prev_stk.len > cur_level +1) {
+			prev_stk.pop();
+		}
+		
+		closee->length = ts -closee->begin;
+		
+		assert(str::comp(name, closee->name));
+		
+		
+		auto paren_i = prev_stk[cur_level -1];
+		
+		n->parent =			paren_i;
+		n->children =		0;
+		#if DEBUG
+		n->next =			-1;
+		#endif
+		
+		closee->next =		n_i;
+		prev_stk[cur_level] = n_i;
+		
+		
+		n->begin =			ts;
+		#if DEBUG
+		n->length =			-1;
+		#endif
+		
+		n->name =			closee->name;
+		n->index =			index;
+		n->flags =			closee->flags;
+		
+	}
+	
+	template <typename FUNC>
+	void _depth_first (FUNC f, Node& n, u32 depth) {
+		
+		f(n, depth);
+		
+		u32 c = n.children;
+		while (c != 0) {
+			auto& node = tree_storage[c];
+			_depth_first(f, node, depth +1);
+			
+			c = node.next;
+		}
+	}
+	
+	template <typename FUNC>
+	void traverse_depth_first (FUNC f) {
+		u32 c = tree_storage[0].children;
+		while (c != 0) {
+			auto& node = tree_storage[c];
+			_depth_first(f, node, 0);
+			
+			c = node.next;
+		}
+	}
+	
+};
+
+dynarr<Thread>	threads;
+array<char>		blocks_str_storage; // on working_stk
+dynarr<lstr>	blocks_strs;
+
+u32				total_block_count;
+
+lstr add_str (lstr s) {
+	for (u32 i=0; i<blocks_strs.len; ++i) {
+		if (str::comp(blocks_strs[i], s)) return blocks_strs[i]; // already present
+	}
+	lstr ret = str::append_term(&working_stk, s);
+	blocks_strs.append(ret);
+	return ret;
+}
+
 void load_file_and_build_trees () {
 	namespace f = flamegraph_data_file;
 	
@@ -1676,48 +1714,15 @@ void load_file_and_build_trees () {
 	}
 	
 }
-	
-// CAUTION: Remember to glBindVertexArray(0) after using this function 
-void gl_bars_vao (GLuint VAO, GLuint VBO) {
-	glBindVertexArray(VAO);
-	
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glEnableVertexAttribArray(2);
-	glEnableVertexAttribArray(3);
-	glEnableVertexAttribArray(4);
-	glEnableVertexAttribArray(5);
-	glEnableVertexAttribArray(6);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	
-	auto vert_size = safe_cast_assert(GLsizei, sizeof(std140_Bar));
-	
-	glVertexAttribPointer(	0, 1, GL_FLOAT, GL_FALSE, vert_size,		(void*)offsetof(std140_Bar, pos_t) );
-	glVertexAttribPointer(	1, 1, GL_FLOAT, GL_FALSE, vert_size,		(void*)offsetof(std140_Bar, len_t) );
-	glVertexAttribIPointer( 2, 1, GL_INT, vert_size,					(void*)offsetof(std140_Bar, depth) );
-	glVertexAttribIPointer( 3, 1, GL_UNSIGNED_INT, vert_size,			(void*)offsetof(std140_Bar, type_flags) );
-	glVertexAttribIPointer( 4, 1, GL_INT, vert_size,					(void*)offsetof(std140_Bar, name_offs) );
-	glVertexAttribIPointer( 5, 1, GL_INT, vert_size,					(void*)offsetof(std140_Bar, name_len) );
-	glVertexAttribPointer(	6, 3, GL_UNSIGNED_BYTE, GL_TRUE, vert_size, (void*)offsetof(std140_Bar, col) );
-	
-	glVertexAttribDivisor(0, 1);
-	glVertexAttribDivisor(1, 1);
-	glVertexAttribDivisor(2, 1);
-	glVertexAttribDivisor(3, 1);
-	glVertexAttribDivisor(4, 1);
-	glVertexAttribDivisor(5, 1);
-	glVertexAttribDivisor(6, 1);
-}
-	
+
 void load_and_process_file () {
 	
 	load_file_and_build_trees();
 	
 	// Upload bars data into VBO
 	for (u32 i=0; i<threads.len; ++i) {
-		glGenBuffers(1, &threads[i].VBO);
-		glGenVertexArrays(1, &threads[i].VAO);
+		glGenBuffers(1, &threads[i].gl_buf.VBO);
+		glGenVertexArrays(1, &threads[i].gl_buf.VAO);
 	}
 	
 	constexpr tv3<GLubyte> COLS[8] = {
@@ -1749,7 +1754,7 @@ void load_and_process_file () {
 		
 		print("Thread % '%' % blocks:\n", thread_i, thr.name, count);
 		
-		gl_bars_vao(thr.VAO, thr.VBO);
+		thr.gl_buf.gl_bars_vao();
 		
 		DEFER_POP(&working_stk);
 		auto* data = working_stk.pushArr<std140_Bar>(count);
@@ -1794,7 +1799,7 @@ void load_and_process_file () {
 	print("done.\n");
 	
 }
-	
+
 void init () {
 	//THR_ENGINE->init_gl();
 	
@@ -1924,26 +1929,25 @@ void init () {
 	
 	load_and_process_file();
 }
-	
-	f64						exp_moving_avg;
-	constexpr f64			EXP_MOVING_AVG_ALPHA =	1.0 / 8.0;
-	
-	bool					dragging_view = false;
-	f32						view_drag_grab_pos;
-	f32						view_pos_sec_to_pix =		0.0f; // sec-space pos of left screen edge
-	f32						view_scale_sec_to_pix =		1000.0f; // pixels per sec
-	
-	f32						select_pos =		0.0f; // sec
-	f32						diff_select_pos =	0.0f; // sec
-	
+
+f64						exp_moving_avg;
+constexpr f64			EXP_MOVING_AVG_ALPHA =	1.0 / 8.0;
+
+bool					dragging_view = false;
+f32						view_drag_grab_pos;
+f32						view_pos_sec_to_pix =		0.0f; // sec-space pos of left screen edge
+f32						view_scale_sec_to_pix =		1000.0f; // pixels per sec
+
+f32						select_pos =		0.0f; // sec
+f32						diff_select_pos =	0.0f; // sec
+
 GLint get_thread_bars_offs (u32 thread_i) {
 	return ((GLint)thread_i * (SHAD_BAR_OFFS * 8)) +SHAD_BAR_BASE_OFFS;
 }
-	
+
 GLsizei gl_thread_bars_draw_prep (u32 thread_i) {
 	
-	#if 1
-	glBindVertexArray(threads[thread_i].VAO);
+	glBindVertexArray(threads[thread_i].gl_buf.VAO);
 	
 	{
 		std140::float_ temp;
@@ -1962,12 +1966,10 @@ GLsizei gl_thread_bars_draw_prep (u32 thread_i) {
 	}
 	
 	return safe_cast_assert(GLsizei, threads[thread_i].get_block_count());
-	#else
-	return 0;
-	#endif
 }
-	
+
 void frame () {
+	
 	
 	{ // Input query
 		input::query(&inp, &sinp);
@@ -2098,31 +2100,18 @@ void frame () {
 	glUseProgram(shaders[PROG_VERT_LINE]);
 	{
 		std140::float_ temp = {};
-		{
-			temp.set(0.0f);
-			
+		auto draw_vert_line = [&] (f32 pos_sec) {
+			temp.set(pos_sec);
 			glBufferSubData(GL_UNIFORM_BUFFER,
 					offsetof(std140_Global, vert_line_pos),
 					sizeof temp, &temp);
 			
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 8);
-		}
-		{
-			temp.set(select_pos);
-			glBufferSubData(GL_UNIFORM_BUFFER,
-					offsetof(std140_Global, vert_line_pos),
-					sizeof temp, &temp);
-			
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, 8);
-		}
-		{
-			temp.set(diff_select_pos);
-			glBufferSubData(GL_UNIFORM_BUFFER,
-					offsetof(std140_Global, vert_line_pos),
-					sizeof temp, &temp);
-			
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, 8);
-		}
+		};
+		
+		draw_vert_line(0);
+		draw_vert_line(select_pos);
+		draw_vert_line(diff_select_pos);
 	}
 	
 	// Free text drawing
@@ -2238,6 +2227,6 @@ void frame () {
 	}
 	
 }
-	
+
 ////
 }
