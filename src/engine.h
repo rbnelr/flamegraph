@@ -1369,13 +1369,19 @@ block_type_flags_e get_flags_and_name (lstr name, lstr* out_remain_name) {
 
 lstr add_str (lstr s);
 
+DECLD constexpr u32				BLOCKS_PER_VBO =	4096;
+DECLD constexpr u32				GL_BUF_CAP =		64;
+
 struct Gl_Buf {
 	GLuint		VBO;
 	GLuint		VAO;
 	
-	// CAUTION: Remember to glBindVertexArray(0) after using this function 
-	void gl_bars_vao () {
+	void init () {
+		glGenBuffers(1, &VBO);
+		glGenVertexArrays(1, &VAO);
+		
 		glBindVertexArray(VAO);
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 		
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
@@ -1385,9 +1391,10 @@ struct Gl_Buf {
 		glEnableVertexAttribArray(5);
 		glEnableVertexAttribArray(6);
 		
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		
 		auto vert_size = safe_cast_assert(GLsizei, sizeof(std140_Bar));
+		auto gl_size = safe_cast_assert(GLsizeiptr, BLOCKS_PER_VBO * sizeof(std140_Bar));
+		
+		glBufferData(GL_ARRAY_BUFFER, gl_size, NULL, GL_STREAM_DRAW);
 		
 		glVertexAttribPointer(	0, 1, GL_FLOAT, GL_FALSE, vert_size,		(void*)offsetof(std140_Bar, pos_t) );
 		glVertexAttribPointer(	1, 1, GL_FLOAT, GL_FALSE, vert_size,		(void*)offsetof(std140_Bar, len_t) );
@@ -1404,6 +1411,9 @@ struct Gl_Buf {
 		glVertexAttribDivisor(4, 1);
 		glVertexAttribDivisor(5, 1);
 		glVertexAttribDivisor(6, 1);
+		
+		glBindVertexArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 	
 };
@@ -1414,8 +1424,7 @@ struct Thread {
 	
 	lstr				name;
 	
-	//dynarr<Gl_Buf>		gl_bufs;
-	Gl_Buf				gl_buf;
+	dynarr<Gl_Buf>		gl_bufs;
 	
 	u32					buffered_count;
 	
@@ -1429,6 +1438,7 @@ struct Thread {
 		
 		name = name_;
 		
+		gl_bufs.init(GL_BUF_CAP);
 		buffered_count = 0;
 		
 		blocks.init(BLOCKS_DYNARR_CAP);
@@ -1726,75 +1736,71 @@ void load_and_process_file () {
 		print("String table size: %\n", blocks_str_storage.len);
 	}
 	
-	for (u32 thread_i=0; thread_i<threads.len; ++thread_i) {
-		auto& thr = threads[thread_i];
-		
-		u32 count = thr.blocks.len;
-		
-		print("Thread % '%' % blocks:\n", thread_i, thr.name, count);
-		
-		glGenBuffers(1, &thr.gl_buf.VBO);
-		glGenVertexArrays(1, &thr.gl_buf.VAO);
-		
-		thr.gl_buf.gl_bars_vao();
-		
-		auto gl_size = safe_cast_assert(GLsizeiptr, count * sizeof(std140_Bar));
-		
-		// NOTE: GL_ARRAY_BUFFER bound in gl_bars_vao() call
-		glBufferData(GL_ARRAY_BUFFER, gl_size, NULL, GL_STREAM_DRAW);
-		
-	}
-	
 }
 
-DECL u32 blocks_per_frame = 25;
+DECL u32 blocks_per_frame = 128;
 
 void every_frame () {
 	
 	for (u32 thread_i=0; thread_i<threads.len; ++thread_i) {
 		auto& thr = threads[thread_i];
 		
-		u32 begin = thr.buffered_count;
-		u32 max = MIN( thr.blocks.len, begin +blocks_per_frame );
-		u32 count = max -begin;
+		u32 buffer_targ = MIN( thr.blocks.len, thr.buffered_count +blocks_per_frame );
+		u32 total_count = buffer_targ -thr.buffered_count;
 		
-		DEFER_POP(&working_stk);
-		auto* data = working_stk.pushArr<std140_Bar>(count);
-		u32 cur = 0;
-		
-		for (u32 i=begin; i<max; ++i) {
-			Block& n = thr.blocks[i];
+		while (thr.buffered_count < buffer_targ) {
+			u32 buf_i = thr.buffered_count / BLOCKS_PER_VBO;
+			u32 offs = thr.buffered_count % BLOCKS_PER_VBO;
 			
-			#if 0
-			print("%(%) %:%:%	% % %\n", repeat("  ", n.depth), i, n.begin, n.length, n.depth, n.name, n.index, (u32)n.flags);
-			//Sleep(1);
-			#endif
+			u32 count = MIN( total_count, BLOCKS_PER_VBO -offs );
 			
-			data[cur] = {}; // zero potential padding
-			
-			auto col = COLS[ i % arrlenof(COLS) ];
-			if (n.flags & BT_WAIT) {
-				col = tv3<GLubyte>(120, 120, 120);
+			assert(count > 0);
+			if (buf_i == thr.gl_bufs.len) {
+				assert(offs == 0);
+				
+				auto& buf = thr.gl_bufs.append();
+				buf.init();
 			}
 			
-			data[cur].pos_t.set( (f32)n.begin );
-			data[cur].len_t.set( (f32)n.length );
-			data[cur].depth.set( safe_cast_assert(GLint, n.depth) );
-			data[cur].type_flags.set(n.flags);
-			data[cur].name_offs.set(safe_cast_assert(GLint, ptr_sub(blocks_str_storage.arr, n.name.str)));
-			data[cur].name_len.set(safe_cast_assert(GLint, n.name.len));
-			data[cur].col = col;
+			DEFER_POP(&working_stk);
+			auto* data = working_stk.pushArr<std140_Bar>(count);
+			u32 cur = 0;
 			
-			++cur;
+			for (u32 i=thr.buffered_count; i<(thr.buffered_count +count); ++i) {
+				Block& n = thr.blocks[i];
+				
+				#if 0
+				print("%(%) %:%:%	% % %\n", repeat("  ", n.depth), i, n.begin, n.length, n.depth, n.name, n.index, (u32)n.flags);
+				//Sleep(1);
+				#endif
+				
+				data[cur] = {}; // zero potential padding
+				
+				auto col = COLS[ i % arrlenof(COLS) ];
+				if (n.flags & BT_WAIT) {
+					col = tv3<GLubyte>(120, 120, 120);
+				}
+				
+				data[cur].pos_t.set( (f32)n.begin );
+				data[cur].len_t.set( (f32)n.length );
+				data[cur].depth.set( safe_cast_assert(GLint, n.depth) );
+				data[cur].type_flags.set(n.flags);
+				data[cur].name_offs.set(safe_cast_assert(GLint, ptr_sub(blocks_str_storage.arr, n.name.str)));
+				data[cur].name_len.set(safe_cast_assert(GLint, n.name.len));
+				data[cur].col = col;
+				
+				++cur;
+			}
+			
+			thr.buffered_count += count;
+			
+			glBindBuffer(GL_ARRAY_BUFFER, thr.gl_bufs[buf_i].VBO);
+			glBufferSubData(GL_ARRAY_BUFFER,
+					safe_cast_assert(GLintptr,		offs * sizeof(std140_Bar)),
+					safe_cast_assert(GLsizeiptr,	count * sizeof(std140_Bar)),
+					data);
+			
 		}
-		
-		thr.buffered_count = max;
-		
-		glBindBuffer(GL_ARRAY_BUFFER, thr.gl_buf.VBO);
-		glBufferSubData(GL_ARRAY_BUFFER,
-				safe_cast_assert(GLintptr,		begin * sizeof(std140_Bar)),
-				safe_cast_assert(GLsizeiptr,	count * sizeof(std140_Bar)),
-				data);
 		
 	}
 	
@@ -1945,29 +1951,6 @@ GLint get_thread_bars_offs (u32 thread_i) {
 	return ((GLint)thread_i * (SHAD_BAR_OFFS * 8)) +SHAD_BAR_BASE_OFFS;
 }
 
-GLsizei gl_thread_bars_draw_prep (u32 thread_i) {
-	
-	glBindVertexArray(threads[thread_i].gl_buf.VAO);
-	
-	{
-		std140::float_ temp;
-		temp.set(threads[thread_i].unit_to_sec);
-		
-		glBufferSubData(GL_UNIFORM_BUFFER,
-						offsetof(std140_Global, units_counter_to_sec),
-						sizeof temp, &temp);
-	}
-	{
-		std140::sint_ temp;
-		temp.set(get_thread_bars_offs(thread_i));
-		glBufferSubData(GL_UNIFORM_BUFFER,
-					offsetof(std140_Global, bar_base_offs),
-					sizeof temp, &temp);
-	}
-	
-	return safe_cast_assert(GLsizei, threads[thread_i].buffered_count );
-}
-
 void frame () {
 	
 	every_frame();
@@ -2059,10 +2042,32 @@ void frame () {
 	glUseProgram(shaders[PROG_BARS]);
 	glBlendFunc(GL_SRC_ALPHA_SATURATE, GL_ONE);
 	for (u32 thread_i=0; thread_i<threads.len; ++thread_i) {
+		auto& thr = threads[thread_i];
 		
-		GLsizei gl_bars_count = gl_thread_bars_draw_prep(thread_i);
+		{
+			std140::float_ temp;
+			temp.set(thr.unit_to_sec);
+			
+			glBufferSubData(GL_UNIFORM_BUFFER,
+							offsetof(std140_Global, units_counter_to_sec),
+							sizeof temp, &temp);
+		}
+		{
+			std140::sint_ temp;
+			temp.set(get_thread_bars_offs(thread_i));
+			glBufferSubData(GL_UNIFORM_BUFFER,
+						offsetof(std140_Global, bar_base_offs),
+						sizeof temp, &temp);
+		}
 		
-		glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 8, gl_bars_count);
+		for (u32 buf_i=0; buf_i<thr.gl_bufs.len; ++buf_i) {
+			
+			glBindVertexArray(thr.gl_bufs[buf_i].VAO);
+			
+			u32 count = buf_i == (thr.gl_bufs.len -1) ? thr.buffered_count % BLOCKS_PER_VBO : BLOCKS_PER_VBO;
+			
+			glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 8, safe_cast_assert(GLsizei, count));
+		}
 	}
 	
 	glBindVertexArray(VAOs[VAO_EMTPY]);
@@ -2079,23 +2084,67 @@ void frame () {
 	// Bars name text
 	glUseProgram(shaders[PROG_BAR_TEXT]);
 	for (u32 thread_i=0; thread_i<threads.len; ++thread_i) {
+		auto& thr = threads[thread_i];
 		
-		GLsizei gl_bars_count = gl_thread_bars_draw_prep(thread_i);
+		{
+			std140::float_ temp;
+			temp.set(thr.unit_to_sec);
+			
+			glBufferSubData(GL_UNIFORM_BUFFER,
+							offsetof(std140_Global, units_counter_to_sec),
+							sizeof temp, &temp);
+		}
+		{
+			std140::sint_ temp;
+			temp.set(get_thread_bars_offs(thread_i));
+			glBufferSubData(GL_UNIFORM_BUFFER,
+						offsetof(std140_Global, bar_base_offs),
+						sizeof temp, &temp);
+		}
 		
-		glBindBuffer(GL_TEXTURE_BUFFER, VBOs[VBO_BUF_TEX_BAR_NAME_STR_TBL]);
-		
-		glTexBuffer(GL_TEXTURE_BUFFER, GL_R8I, VBOs[VBO_BUF_TEX_BAR_NAME_STR_TBL]);
-		
-		glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, gl_bars_count);
+		for (u32 buf_i=0; buf_i<thr.gl_bufs.len; ++buf_i) {
+			
+			glBindVertexArray(thr.gl_bufs[buf_i].VAO);
+			
+			glBindBuffer(GL_TEXTURE_BUFFER, VBOs[VBO_BUF_TEX_BAR_NAME_STR_TBL]);
+			
+			glTexBuffer(GL_TEXTURE_BUFFER, GL_R8I, VBOs[VBO_BUF_TEX_BAR_NAME_STR_TBL]);
+			
+			u32 count = buf_i == (thr.gl_bufs.len -1) ? thr.buffered_count % BLOCKS_PER_VBO : BLOCKS_PER_VBO;
+			
+			glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, safe_cast_assert(GLsizei, count));
+		}
 	}
 	
 	// Bars duration text
 	glUseProgram(shaders[PROG_BAR_DURATION_TEXT]);
 	for (u32 thread_i=0; thread_i<threads.len; ++thread_i) {
+		auto& thr = threads[thread_i];
 		
-		GLsizei gl_bars_count = gl_thread_bars_draw_prep(thread_i);
+		{
+			std140::float_ temp;
+			temp.set(thr.unit_to_sec);
+			
+			glBufferSubData(GL_UNIFORM_BUFFER,
+							offsetof(std140_Global, units_counter_to_sec),
+							sizeof temp, &temp);
+		}
+		{
+			std140::sint_ temp;
+			temp.set(get_thread_bars_offs(thread_i));
+			glBufferSubData(GL_UNIFORM_BUFFER,
+						offsetof(std140_Global, bar_base_offs),
+						sizeof temp, &temp);
+		}
 		
-		glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, gl_bars_count);
+		for (u32 buf_i=0; buf_i<thr.gl_bufs.len; ++buf_i) {
+			
+			glBindVertexArray(thr.gl_bufs[buf_i].VAO);
+			
+			u32 count = buf_i == (thr.gl_bufs.len -1) ? thr.buffered_count % BLOCKS_PER_VBO : BLOCKS_PER_VBO;
+			
+			glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, safe_cast_assert(GLsizei, count));
+		}
 	}
 	
 	glUseProgram(shaders[PROG_VERT_LINE]);
@@ -2159,6 +2208,8 @@ void frame () {
 	{ // Thread names and seperator
 		
 		for (u32 i=0; i<threads.len; ++i) {
+			DEFER_POP(&working_stk);
+			
 			GLint y = get_thread_bars_offs(i) -(1 * SHAD_BAR_OFFS);
 			draw_text_line(tv2<GLint>(0, y +8),
 					"----------------------------------------------------------------------"
@@ -2168,7 +2219,8 @@ void frame () {
 					"----------------------------------------------------------------------"
 					"----------------------------------------------------------------------"
 					);
-			draw_text_line(tv2<GLint>(0, y +line_height +8), threads[i].name);
+			draw_text_line(tv2<GLint>(0, y +line_height +8),
+				print_working_stk("%    VBOs: %", threads[i].name, threads[i].gl_bufs.len) );
 		}
 	}
 	
