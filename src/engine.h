@@ -1338,6 +1338,7 @@ DECLD GLuint					samplers[SAMPL_COUNT];
 DECLD GLuint					textures[TEX_COUNT];
 
 #include "flamegraph_data_file.h"
+namespace f = flamegraph_data_file;
 
 struct Block {
 	u32					parent;
@@ -1608,6 +1609,9 @@ struct Str {
 	u32	len;
 };
 
+DECLD u32				chunks_count;
+DECLD f::Chunk*			chunk;
+
 DECLD dynarr<Thread>	threads;
 DECLD dynarr<char>		blocks_str_storage;
 DECLD dynarr<Str>		blocks_strs;
@@ -1653,9 +1657,7 @@ DECLD constexpr tv3<GLubyte> COLS[8] = {
 	{128, 192,	77},
 };
 
-void load_and_process_file () {
-	
-	namespace f = flamegraph_data_file;
+void at_init () {
 	
 	Mem_Block	data;
 	assert(!platform::read_whole_file_onto(&working_stk, input_filename, 0, &data));
@@ -1698,34 +1700,27 @@ void load_and_process_file () {
 	
 	assert(threads_event_counter == f_header->total_event_count);
 	
-	auto* chunk = (f::Chunk*)(f_thr_str_tbl +f_header->thr_name_str_tbl_size);
-	
 	blocks_str_storage	.init(BLOCKS_STR_TABLE_CAP);
 	blocks_strs			.init(UNIQUE_BLOCKS_DYNARR_CAP);
 	
-	#if 1
-	u32 total_events_counter = 0;
-	for (u32 chunk_i=0; chunk_i<f_header->chunks_count; ++chunk_i) {
+	chunk = (f::Chunk*)(f_thr_str_tbl +f_header->thr_name_str_tbl_size);
+	
+	chunks_count = f_header->chunks_count;
+	
+}
+
+DECLD u32 chunk_i = 0;
+
+void every_frame () {
+	
+	while (chunk_i < chunks_count && chunk_i < frame_number) {
+		
 		mlstr chunk_name = f::get_chunk_name(chunk);
-		#if 0
-		print("Chunk % '%' %: offs_to_next %  event_count %	 ts_begin %	 ts_length %\n",
-				chunk_i, chunk_name, chunk->index,
-				chunk->offs_to_next,
-				chunk->event_count,
-				chunk->ts_begin,
-				chunk->ts_length );
-		#endif
 		
 		auto* event = f::get_chunk_events(chunk_name);
 		
 		for (u32 i=0; i<chunk->event_count; ++i) {
 			mlstr code_name = f::get_event_name(event);
-			#if 0
-			print("  Event % '%' %: % %\n",
-					i, code_name, event->index,
-					event->thread_indx,
-					event->ts );
-			#endif
 			
 			assert(event->thread_indx < threads.len);
 			auto* thr = &threads[ event->thread_indx ];
@@ -1745,20 +1740,10 @@ void load_and_process_file () {
 			event = f::get_next_event(code_name);
 		}
 		
-		total_events_counter += chunk->event_count;
 		chunk = ptr_add(chunk, chunk->offs_to_next);
+		
+		++chunk_i;
 	}
-	
-	assert(total_events_counter == f_header->total_event_count);
-	#else
-	
-	#endif
-	
-}
-
-DECL u32 blocks_per_frame = 128;
-
-void every_frame () {
 	
 	if (blocks_str_storage.len != gl_str_tbl_size) {
 		glBindBuffer(GL_TEXTURE_BUFFER, VBOs[VBO_BUF_TEX_BAR_NAME_STR_TBL]);
@@ -1773,14 +1758,13 @@ void every_frame () {
 	for (u32 thread_i=0; thread_i<threads.len; ++thread_i) {
 		auto& thr = threads[thread_i];
 		
-		u32 buffer_targ = MIN( thr.blocks.len, thr.buffered_count +blocks_per_frame );
-		u32 total_count = buffer_targ -thr.buffered_count;
+		assert(thr.buffered_count <= thr.blocks.len);
 		
-		while (thr.buffered_count < buffer_targ) {
+		while (thr.buffered_count < thr.blocks.len) {
 			u32 buf_i = thr.buffered_count / BLOCKS_PER_VBO;
 			u32 offs = thr.buffered_count % BLOCKS_PER_VBO;
 			
-			u32 count = MIN( total_count, BLOCKS_PER_VBO -offs );
+			u32 count = MIN( thr.blocks.len -thr.buffered_count, BLOCKS_PER_VBO -offs );
 			
 			assert(count > 0);
 			if (buf_i == thr.gl_bufs.len) {
@@ -1961,7 +1945,7 @@ void init () {
 		}
 	}
 	
-	load_and_process_file();
+	at_init();
 }
 
 f64						exp_moving_avg;

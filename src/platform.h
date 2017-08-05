@@ -127,8 +127,8 @@ namespace time {
 		auto tsince_begin = units::Time(since_begin);
 		auto tsince_prev = units::Time(since_prev);
 		
-		print("Startup event at %% (dt: %%): %\n",
-				tsince_begin.val,tsince_begin.unit, tsince_prev.val,tsince_prev.unit, event_name);
+		//print("Startup event at %% (dt: %%): %\n",
+		//		tsince_begin.val,tsince_begin.unit, tsince_prev.val,tsince_prev.unit, event_name);
 		
 		cpu_qpc_prev = now;
 	}
@@ -140,8 +140,8 @@ namespace time {
 		
 		auto tsince_begin = units::Time(since_begin);
 		
-		print("%: Startup event at %%: %\n",
-				thread_name, tsince_begin.val,tsince_begin.unit, event_name);
+		//print("%: Startup event at %%: %\n",
+		//		thread_name, tsince_begin.val,tsince_begin.unit, event_name);
 		
 	}
 	
@@ -738,7 +738,7 @@ namespace platform {
 			}
 			time::startup_event("dummy window wglMakeCurrent()");
 			
-			{
+			if (0) {
 				auto* gl_vers_cstr = reinterpret_cast<char const*>(glGetString(GL_VERSION));
 				assert(gl_vers_cstr != nullptr);
 				print("GL_VERSION of dummy window: %\n", gl_vers_cstr);
@@ -905,7 +905,7 @@ namespace platform {
 			}
 		}
 		
-		{
+		if (0) {
 			auto* gl_vers_cstr = reinterpret_cast<char const*>(glGetString(GL_VERSION));
 			assert(gl_vers_cstr != nullptr);
 			print("GL_VERSION of real window: %\n", gl_vers_cstr);
