@@ -1,116 +1,167 @@
 
 #define DBG_DO_MEMSET DBG_MEMORY
 
-DECL void assert_page_size () {
-	SYSTEM_INFO info;
-	GetSystemInfo(&info);
+struct Stack {
+	byte*	top;
+	byte*	end;
+	uptr	reserveSize;
+	byte*	base;
 	
-	if (info.dwPageSize != 4096) {
-		DBGBREAK;
-	}
-}
-
-DECLM NOINLINE void Stack::resize () {
-	uptr new_size = ptr_sub(base, top);
+	DECLM NOINLINE void resize ();
 	
-	uptr cur_cap = ptr_sub(base, end);
-	while (new_size > cur_cap) {
-		cur_cap = cur_cap ? cur_cap * 2 : 4096;
-	}
-	{
-		auto cur = units::Bytes(cur_cap);
-		auto new_ = units::Bytes(new_size);
-		auto reserve = units::Bytes(reserveSize);
+	DECLM void purge ();
+	
+	DECLM void decommit_all ();
+	
+	DECLM byte* _push (uptr size) {
+		auto ret = top;
 		
-		assert(cur_cap <= reserveSize,
-				"stack expanded to: %% (requested size: %%) reserved address space: %%\n",
-				cur.val,cur.unit, new_.val,new_.unit, reserve.val,reserve.unit);
-		auto ret = VirtualAlloc(base, cur_cap, MEM_COMMIT, PAGE_READWRITE);
-		assert(ret != nullptr);
-	}
-	
-	#if DBG_DO_MEMSET
-	byte* old_end = end;
-	#endif
-	
-	end = base +cur_cap;
-	
-	#if DBG_DO_MEMSET
-	cmemset(old_end, DBG_MEM_UNALLOCATED_BYTE, ptr_sub(old_end, end));
-	#endif
-}
-
-DECLM void Stack::purge () {
-	uptr cur_size = ptr_sub(base, top);
-	uptr cur_cap = ptr_sub(base, end);
-	
-	assert(is_aligned<uptr>(cur_cap, 4096));
-	
-	uptr new_cap = 0;
-	while (cur_size > new_cap) {
-		new_cap = new_cap ? new_cap * 2 : 4096;
-	}
-	
-	end = base +new_cap;
-	
-	byte* addr = base +new_cap;
-	uptr size = cur_cap -new_cap;
-	
-	if (size > 0) {
-		auto ret = VirtualFree(addr, size, MEM_DECOMMIT);
-		if (ret == 0) {
-			auto err = GetLastError();
-			assert(false, "%", err);
+		top += size;
+		if (UNLIKELY(top > end)) {
+			resize();
 		}
+		
+		#if DBG_DO_MEMSET
+		cmemset(ret, DBG_MEM_UNINITIALIZED_BYTE, size);
+		#endif
+		
+		return ret;
+	}
+	template <uptr ALIGN>
+	DECLM byte * _pushAlign (uptr size) {
+		
+		#if DBG_DO_MEMSET
+		byte* old_top = top;
+		#endif
+		
+		top = align_up(top, ALIGN);
+		
+		#if DBG_DO_MEMSET
+		cmemset(old_top, DBG_MEM_ALIGN_PADDING_BYTE, ptr_sub(old_top, top));
+		#endif
+		
+		return _push(size);
 	}
 	
-	
-}
-
-DECLM void Stack::decommit_all () {
-	uptr cur_cap = ptr_sub(base, end);
-	
-	assert(is_aligned<uptr>(cur_cap, 4096));
-	
-	end = base;
-	
-	if (cur_cap > 0) {
-		auto ret = VirtualFree(base, cur_cap, MEM_DECOMMIT);
-		if (ret == 0) {
-			auto err = GetLastError();
-			assert(false, "%", err);
-		}
+	// DEFAULT
+	template <typename T>	DECLM								T * push () {
+		return reinterpret_cast<T*>( _pushAlign<alignof(T)>(sizeof(T)) );
 	}
-}
-
-
-template <uptr ALIGN>
-DECL Stack makeStack (uptr commitSize, uptr reserveSize) {
-	static_assert(ALIGN <= kibi(64), "");
-	
-	Stack stack;
-	stack.reserveSize = reserveSize;
-	{ // Reserve address space for stack
-		auto ret = VirtualAlloc(NULL, reserveSize, MEM_RESERVE, PAGE_READWRITE);
-		assert(ret != nullptr, "%", reserveSize);
-		stack.base = reinterpret_cast<byte*>(ret);
+	template <typename T>	DECLM								T * push (T val) {
+		auto ret = push<T>();
+		*ret = val;
+		return ret;
 	}
-	if (commitSize != 0) {
-		auto ret = VirtualAlloc(stack.base, commitSize, MEM_COMMIT, PAGE_READWRITE);
-		assert(ret != nullptr);
+	template <typename T>	DECLM								T * pushArr (uptr count) {
+		return reinterpret_cast<T*>( _pushAlign<alignof(T)>(sizeof(T) * count) );
 	}
-	stack.top = stack.base;
-	stack.end = stack.base +commitSize;
-	return stack;
-}
-DECL void freeStack (Stack* stack) {
-	auto ret = VirtualFree(stack->base, 0, MEM_RELEASE);
-	assert(ret != 0);
 	
-	#if 1
-	stack->top = nullptr;
-	stack->end = nullptr;
-	stack->reserveSize = 0;
-	stack->base = nullptr;
+	// NO_ALIGN
+	template <typename T>	DECLM								T * pushNoAlign () {
+		return reinterpret_cast<T*>( _push(sizeof(T)) );
+	}
+	template <typename T>	DECLM								T * pushNoAlign (T val) {
+		auto ret = pushNoAlign<T>();
+		*ret = val;
+		return ret;
+	}
+	template <typename T>	DECLM								T * pushArrNoAlign (uptr count) {
+		return reinterpret_cast<T*>( _push(sizeof(T) * count) );
+	}
+	
+	// ALIGN
+	template <uptr ALIGN, typename T>	DECLM					T * pushAlign () {
+		return reinterpret_cast<T*>( _pushAlign<ALIGN>(sizeof(T)) );
+	}
+	template <uptr ALIGN, typename T>	DECLM					T * pushAlign (T val) {
+		auto ret = pushAlign<ALIGN, T>();
+		*ret = val;
+		return ret;
+	}
+	template <uptr ALIGN, typename T>	DECLM					T * pushArrAlign (uptr count) {
+		return reinterpret_cast<T*>( _pushAlign<ALIGN>(sizeof(T) * count) );
+	}
+	
+	#if 0
+	DECLM byte* pushDynamic (uptr size) {
+		return _push(size);
+	}
 	#endif
-}
+	
+	//
+	template <typename T=byte>
+	DECLM T * getTop () const {
+		return reinterpret_cast<T*>(align_up(top, alignof(T)));
+	}
+	template <typename T=byte>
+	DECLM T * getTopNoAlign () const {
+		return reinterpret_cast<T*>(top);
+	}
+	template <uptr ALIGN, typename T=byte>
+	DECLM T * getTopAlign () const {
+		return reinterpret_cast<T*>(align_up(top, ALIGN));
+	}
+	
+	#if 0 // use pop instead
+	template <typename T>
+	DECLM T* setTop (T* ptr) {
+		top = reinterpret_cast<byte*>(ptr);
+		return ptr;
+	}
+	#endif
+	
+	template <uptr ALIGN, typename T=byte>
+	DECLM T* alignTop () {
+		return top = getTopAlign<ALIGN, T>();
+		
+	}
+	
+	DECLM void alignTopDynamic (uptr align) {
+		top = align_up(top, align);
+	}
+	
+	DECLM uptr getTopBytes () const {
+		return ptr_sub(top, end);
+	}
+	
+	template <uptr ALIGN, typename T=byte> DECLM T* zeropad_to_align () {
+		u8* cur = getTop<byte>();
+		u8* end = align_up(cur, ALIGN);
+		pushArrZero<byte>(ptr_sub(cur, end));
+		return reinterpret_cast<T*>(cur);
+	}
+	
+	template <typename T>
+	DECLM void pop (T* ptr_) {
+		byte* ptr = const_cast<byte*>(reinterpret_cast<byte const*>(ptr_)); // we want to be able to pop the stack to a const char*
+		
+		#if DBG_DO_MEMSET
+		uptr pop_size = ptr_sub(ptr, top);
+		#endif
+		
+		top = reinterpret_cast<byte*>(ptr);
+		
+		#if DBG_DO_MEMSET
+		cmemset(top, DBG_MEM_FREED_BYTE, pop_size);
+		#endif
+	}
+	
+	DECLM void pop_all () {
+		pop(base);
+	}
+	
+	template <typename T>	DECLM	T* append (T val) {
+		return push<T>(val);
+	}
+	template <typename T>	DECLM	T* append (T const* arr, uptr count) {
+		T* ret = pushArr<T>(count);
+		cmemcpy(ret, arr, sizeof(T)*count);
+		return ret;
+	}
+};
+	
+	template <uptr ALIGN=kibi(64)>
+	DECL Stack makeStack (uptr commitSize, uptr reserveSize);
+
+#define _DEFER_POP(stack_ptr, counter) auto CONCAT(stack_top_, counter) = stack_ptr->getTop(); _defer(counter) { stack_ptr->pop(CONCAT(stack_top_, counter)); }
+#define DEFER_POP(stack_ptr) _DEFER_POP((stack_ptr), __COUNTER__)

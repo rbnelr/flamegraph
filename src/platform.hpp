@@ -1,6 +1,6 @@
 	
 //// OpenGL
-	#include "oglInterface.h"
+	#include "oglInterface.hpp"
 	
 	struct Mem_Block {
 		byte*	ptr;
@@ -233,7 +233,7 @@ namespace platform {
 	
 }
 	
-	#include "input.h"
+	#include "input.hpp"
 	
 	namespace input {
 		
@@ -657,7 +657,7 @@ namespace platform {
 		}
 	}
 	
-	#include "engine.h"
+	#include "engine.hpp"
 	
 namespace platform {
 	DECL void msg_thread_close_application () {

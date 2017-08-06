@@ -1,559 +1,645 @@
 	
-namespace str {
+////
+	// SI prefixed (don't use these for bytes!)
+	template <typename T> DECL constexpr FORCEINLINE T milli (T val) {	return val /		static_cast<T>(1000); }
+	template <typename T> DECL constexpr FORCEINLINE T micro (T val) {	return milli(val) /	static_cast<T>(1000); }
+	template <typename T> DECL constexpr FORCEINLINE T nano (T val) {	return micro(val) /	static_cast<T>(1000); }
+	template <typename T> DECL constexpr FORCEINLINE T pico (T val) {	return nano(val) /	static_cast<T>(1000); }
+	template <typename T> DECL constexpr FORCEINLINE T femto (T val) {	return pico(val) /	static_cast<T>(1000); }
+	template <typename T> DECL constexpr FORCEINLINE T atto (T val) {	return femto(val) /	static_cast<T>(1000); }
+	template <typename T> DECL constexpr FORCEINLINE T kilo (T val) {	return val *		static_cast<T>(1000); }
+	template <typename T> DECL constexpr FORCEINLINE T mega (T val) {	return kilo(val) *	static_cast<T>(1000); }
+	template <typename T> DECL constexpr FORCEINLINE T giga (T val) {	return mega(val) *	static_cast<T>(1000); }
+	template <typename T> DECL constexpr FORCEINLINE T tera (T val) {	return giga(val) *	static_cast<T>(1000); }
+	template <typename T> DECL constexpr FORCEINLINE T peta (T val) {	return tera(val) *	static_cast<T>(1000); }
+	template <typename T> DECL constexpr FORCEINLINE T exa (T val) {	return peta(val) *	static_cast<T>(1000); }
+	// 
+	template <typename T> DECL constexpr FORCEINLINE T kibi (T val) {	return val *		static_cast<T>(1024); }
+	template <typename T> DECL constexpr FORCEINLINE T mebi (T val) {	return kibi(val) *	static_cast<T>(1024); }
+	template <typename T> DECL constexpr FORCEINLINE T gibi (T val) {	return mebi(val) *	static_cast<T>(1024); }
+	template <typename T> DECL constexpr FORCEINLINE T tebi (T val) {	return gibi(val) *	static_cast<T>(1024); }
+	template <typename T> DECL constexpr FORCEINLINE T pebi (T val) {	return tebi(val) *	static_cast<T>(1024); }
 	
-	DECLV mlstr __append (dynarr<char, u32>* appendable, ui to_append_count, ...) {
-		
-		va_list	vl0, vl;
-		va_start(vl0, to_append_count);
-		va_copy(vl, vl0);
-		
-		u32 len = 0;
-		for (ui i=0; i<to_append_count; ++i) {
-			len = safe_add_assert(len, va_arg(vl0, lstr).len);
-		}
-		va_end(vl0);
-		
-		char* appended = appendable->grow_by(len);
-		char* cur = appended;
-		for (ui i=0; i<to_append_count; ++i) {
-			lstr to_append = va_arg(vl, lstr);
-			cmemcpy(cur, to_append.str, to_append.len);
-			cur += to_append.len;
-		}
-		va_end(vl);
-		
-		return { appended, len };
+////
+	template <typename T> DECL constexpr FORCEINLINE T					SQUARED (T x) {
+		return x*x;
 	}
-	DECLV mlstr __append_term (dynarr<char, u32>* appendable, ui to_append_count, ...) {
-		
-		va_list	vl0, vl;
-		va_start(vl0, to_append_count);
-		va_copy(vl, vl0);
-		
-		u32 len = 1;
-		for (ui i=0; i<to_append_count; ++i) {
-			len = safe_add_assert(len, va_arg(vl0, lstr).len);
-		}
-		va_end(vl0);
-		
-		char* appended = appendable->grow_by(len);
-		char* cur = appended;
-		for (ui i=0; i<to_append_count; ++i) {
-			lstr to_append = va_arg(vl, lstr);
-			cmemcpy(cur, to_append.str, to_append.len);
-			cur += to_append.len;
-		}
-		va_end(vl);
-		
-		appended[len -1] = '\0';
-		return { appended, len -1 };
+	template <typename T> DECL constexpr FORCEINLINE T					CUBED (T x) {
+		return x*x*x;
 	}
 	
-	DECLV mlstr __append (Stack* appendable, ui to_append_count, ...) {
-		
-		va_list	vl0, vl;
-		va_start(vl0, to_append_count);
-		va_copy(vl, vl0);
-		
-		u32 len = 0;
-		for (ui i=0; i<to_append_count; ++i) {
-			len = safe_add_assert(len, va_arg(vl0, lstr).len);
-		}
-		va_end(vl0);
-		
-		char* appended = appendable->pushArr<char>(len);
-		char* cur = appended;
-		for (ui i=0; i<to_append_count; ++i) {
-			lstr to_append = va_arg(vl, lstr);
-			cmemcpy(cur, to_append.str, to_append.len);
-			cur += to_append.len;
-		}
-		va_end(vl);
-		
-		return { appended, len };
+	template <typename T> DECL constexpr FORCEINLINE T					MIN (T a, T b) {
+		return a <= b ? a : b;
 	}
-	DECLV mlstr __append_term (Stack* appendable, ui to_append_count, ...) {
-		
-		va_list	vl0, vl;
-		va_start(vl0, to_append_count);
-		va_copy(vl, vl0);
-		
-		u32 len = 1;
-		for (ui i=0; i<to_append_count; ++i) {
-			len = safe_add_assert(len, va_arg(vl0, lstr).len);
-		}
-		va_end(vl0);
-		
-		char* appended = appendable->pushArr<char>(len);
-		char* cur = appended;
-		for (ui i=0; i<to_append_count; ++i) {
-			lstr to_append = va_arg(vl, lstr);
-			cmemcpy(cur, to_append.str, to_append.len);
-			cur += to_append.len;
-		}
-		va_end(vl);
-		
-		appended[len -1] = '\0';
-		return { appended, len -1 };
+	template <typename T> DECL constexpr FORCEINLINE T					MAX (T a, T b) {
+		return a >= b ? a : b;
 	}
 	
-	template <typename APPENDABLE, typename LSTR, typename... LSTRS>
-	DECL FORCEINLINE mlstr _append (APPENDABLE* appendable, LSTR to_append, LSTRS... to_appends) {
-		static_assert(types::is_same<decltype(to_append), lstr>(), "_append LSTR != lstr");
-		return __append(appendable, packlenof<ui, LSTRS...>() +1, to_append, to_appends...);
+	template <typename T, typename... Ts> DECL constexpr FORCEINLINE T	MIN (T a, T b, Ts... args) {
+		return MIN( MIN(a, b), args... );
 	}
-	template <typename APPENDABLE, typename LSTR, typename... LSTRS>
-	DECL FORCEINLINE mlstr _append_term (APPENDABLE* appendable, LSTR to_append, LSTRS... to_appends) {
-		static_assert(types::is_same<decltype(to_append), lstr>(), "_append LSTR != lstr");
-		return __append_term(appendable, packlenof<ui, LSTRS...>() +1, to_append, to_appends...);
+	template <typename T, typename... Ts> DECL constexpr FORCEINLINE T	MAX (T a, T b, Ts... args) {
+		return MAX( MAX(a, b), args... );
 	}
 	
-	// Can't get implicit constructor call from string literal to lstr with template arguments
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append (APPENDABLE* appendable, lstr a) {
-		return _append(appendable, a);
-	}
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append_term (APPENDABLE* appendable, lstr a) {
-		return _append_term(appendable, a);
+	template <typename T> DECL constexpr FORCEINLINE T	clamp (T val, T min, T max) {
+		return MIN( MAX(val, min), max );
 	}
 	
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append (APPENDABLE* appendable, lstr a, lstr b) {
-		return _append(appendable, a, b);
+////
+	template <typename RET_T=uptr, typename T, uptr N> DECL constexpr FORCEINLINE RET_T
+																		arrlenof (T (& arr)[N]) {
+		static_assert(N <= limits::max<RET_T>(), "arrlenof():: out of range!");
+		return static_cast<RET_T>(N);
 	}
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append_term (APPENDABLE* appendable, lstr a, lstr b) {
-		return _append_term(appendable, a, b);
-	}
-	
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append (APPENDABLE* appendable, lstr a, lstr b, lstr c) {
-		return _append(appendable, a, b, c);
-	}
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append_term (APPENDABLE* appendable, lstr a, lstr b, lstr c) {
-		return _append_term(appendable, a, b, c);
+	template <typename RET_T=uptr, typename T, uptr N> DECL constexpr FORCEINLINE RET_T
+																		arrsizeof (T (& arr)[N]) {
+		static_assert(sizeof(arr) <= limits::max<RET_T>(), "arrlenof():: out of range!");
+		return static_cast<RET_T>(sizeof(arr));
 	}
 	
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append (APPENDABLE* appendable, lstr a, lstr b, lstr c, lstr d) {
-		return _append(appendable, a, b, c, d);
-	}
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append_term (APPENDABLE* appendable, lstr a, lstr b, lstr c, lstr d) {
-		return _append_term(appendable, a, b, c, d);
+	template <typename RET_T, typename... Ts> DECL constexpr FORCEINLINE RET_T	packlenof () {
+		static_assert(sizeof...(Ts) <= limits::max<RET_T>(), "packlenof():: out of range!");
+		return static_cast<RET_T>(sizeof...(Ts));
 	}
 	
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append (APPENDABLE* appendable, lstr a, lstr b, lstr c, lstr d, lstr e) {
-		return _append(appendable, a, b, c, d, e);
+////
+	template <typename T> DECL constexpr FORCEINLINE T						align_down (T i, T a) {
+		return i -(i % a);
 	}
-	template <typename APPENDABLE> DECL FORCEINLINE mlstr append_term (APPENDABLE* appendable, lstr a, lstr b, lstr c, lstr d, lstr e) {
-		return _append_term(appendable, a, b, c, d, e);
+	template <typename T> DECL constexpr FORCEINLINE T						align_up (T i, T a) {
+		return (i % a) == 0 ? i : i +(a -(i % a));
 	}
+	template <typename T, typename TA> DECL constexpr FORCEINLINE T*		align_down (T* i, TA a) {
+		return (T*)( (uptr)i -((uptr)i % a) );
+	}
+	template <typename T, typename TA> DECL constexpr FORCEINLINE T*		align_up (T* i, TA a) {
+		return ((uptr)i % a) == 0 ? i :(T*)((uptr)i +(a -((uptr)i % a)) );
+	}
+	
+	template <typename T> DECL constexpr FORCEINLINE bool					is_aligned (T i, T a) {
+		return (i % a) == 0;
+	}
+	template <typename T, typename TA> DECL constexpr FORCEINLINE bool		is_aligned (T const* i, TA a) {
+		return ((uptr)i % a) == 0;
+	}
+	
+////
+	DECL u64 aligndown_power_of_two (u64 val) { // 0 -> 0   (2^64)-1 -> 2^53
+		val |= val >> 1;
+		val |= val >> 2;
+		val |= val >> 4;
+		val |= val >> 8;
+		val |= val >> 16;
+		val |= val >> 32;
+		return val -(val >> 1);
+	}
+	DECL u64 alignup_power_of_two (u64 val) { // 0 -> 0   (2^64)-1 -> 0 [overflow]
+		--val;
+		val |= val >> 1;
+		val |= val >> 2;
+		val |= val >> 4;
+		val |= val >> 8;
+		val |= val >> 16;
+		val |= val >> 32;
+		return ++val;
+	}
+	DECL s64 aligndown_power_of_two (s64 val) {
+		return (s64)aligndown_power_of_two((u64)val);
+	}
+	DECL s64 alignup_power_of_two (s64 val) {
+		return (s64)alignup_power_of_two((u64)val);
+	}
+	
+	DECL u32 aligndown_power_of_two (u32 val) {
+		val |= val >> 1;
+		val |= val >> 2;
+		val |= val >> 4;
+		val |= val >> 8;
+		val |= val >> 16;
+		return val -(val >> 1);
+	}
+	DECL u32 alignup_power_of_two (u32 val) {
+		--val;
+		val |= val >> 1;
+		val |= val >> 2;
+		val |= val >> 4;
+		val |= val >> 8;
+		val |= val >> 16;
+		return ++val;
+	}
+	DECL s32 aligndown_power_of_two (s32 val) {
+		return (s32)aligndown_power_of_two((u32)val);
+	}
+	DECL s32 alignup_power_of_two (s32 val) {
+		return (s32)alignup_power_of_two((u32)val);
+	}
+	
+////
+	template <typename T>
+	DECL constexpr uptr ptr_sub (T const* a, T const* b) {
+		return (uptr)b -(uptr)a;
+	}
+	template <typename T, typename OFFS_T>
+	DECL constexpr T* ptr_add (T* a, OFFS_T b) {
+		return (T*)((uptr)a +b);
+	}
+	
+////
+	#include "string.h"
+	
+	DECL void* cmemset (void* ptr, u8 val, uptr size) {
+		return memset(ptr, val, size);
+	}
+	DECL void* cmemcpy (void* dest, void const* src, uptr size) {
+		return memcpy(dest, (void*)src, size);
+	}
+	DECL void* cmemmove (void* dest, void const* src, uptr size) {
+		return memmove(dest, src, size);
+	}
+	DECL bool cmemcmp (void const* l, void const* r, uptr size) {
+		return memcmp(l, r, size) == 0;
+	}
+	
+////
+namespace safe {
+	
+	
+	template <typename T_CAST, typename T>	DECLT constexpr bool _safe_cast (T val);
+	
+	#define SAFE_CAST(t_cast, t) template<> DECLT constexpr bool _safe_cast<t_cast, t> (t val)
+	
+	DECLD constexpr u64 MAX_S64 =		0x8000000000000000ull;
+	DECLD constexpr u64 MAX_U32 =		       0x100000000ull;
+	DECLD constexpr u32 MAX_S32 =		        0x80000000ul;
+	
+	SAFE_CAST(s64, u64) { return val < MAX_S64; }
+	SAFE_CAST(u64, u64) { return true; }
+	SAFE_CAST(u32, u64) { return val < MAX_U32; }
+	SAFE_CAST(s32, u64) { return val < MAX_S32; }
+	SAFE_CAST(u32, s64) { return val >= 0; }
+	
+	SAFE_CAST(s64, u32) { return true; }
+	SAFE_CAST(u32, u32) { return true; }
+	SAFE_CAST(s32, u32) { return val < MAX_S32; }
+	SAFE_CAST(s64, s32) { return true; }
+	SAFE_CAST(s32, s32) { return true; }
+	SAFE_CAST(u32, s32) { return val >= 0; }
+	
+	SAFE_CAST(u32, u16) { return true; }
+	SAFE_CAST(s32, u16) { return true; }
+	SAFE_CAST(s32, s16) { return true; }
+	
+	#undef SAFE_CAST
+	
+	#define safe_cast(t, val) _safe_cast<typename types::NormalizeIntType<t>::type>(types::normalize_int_type(val))
+	
+	template <typename T_CAST, typename T>
+	DECL T_CAST _safe_cast_assert (T val) {
+		assert(safe_cast(T_CAST, val), "_safe_cast_assert:: out of range !(% >= % >= %)", limits::min<T_CAST>(), val, limits::max<T_CAST>());
+		return static_cast<T_CAST>(val);
+	}
+	
+	#define safe_cast_assert(t, val) _safe_cast_assert<t>(val)
+	
+	
+	DECL constexpr bool safe_add (u32 l, uptr r) {
+		return (uptr)(limits::max<u32>() -l) >= r;
+	}
+	DECL constexpr bool safe_add (u64 l, uptr r) {
+		return (uptr)(limits::max<u64>() -l) >= r;
+	}
+	
+	DECL constexpr bool safe_add (u32 l, uptr a, uptr b) {
+		return safe_add(a, b) && (uptr)(limits::max<u32>() -l) >= (a +b);
+	}
+	DECL constexpr bool safe_add (u64 l, uptr a, uptr b) {
+		return safe_add(a, b) && (uptr)(limits::max<u64>() -l) >= (a +b);
+	}
+	
+	DECL u32 safe_add_assert (u32 l, uptr r) {
+		assert(safe_add(l, r), "safe_add_assert:: addition overflow (% +% > %)", l, r, limits::max<u32>());
+		return l +(u32)r;
+	}
+	DECL u64 safe_add_assert (u64 l, uptr r) {
+		assert(safe_add(l, r), "safe_add_assert:: addition overflow (% +% > %)", l, r, limits::max<u64>());
+		return l +(u64)r;
+	}
+	
+	template <typename T_CAST, typename T>
+	DECL constexpr T_CAST static_safe_cast_assert (T VAL) {
+		static_assert(safe_cast(T_CAST, VAL), "static_safe_cast_assert:: out of range");
+		//static_assert(safe_cast(T_CAST, VAL), "static_safe_cast_assert:: out of range");
+		return static_cast<T_CAST>(VAL);
+	}
+	
+	#define offsetof_t(t, s, m)		(t)(offsetof(s, m))
+	#define sizeof_t(t, val)		(t)(sizeof(val))
+	
+	//#define offsetof_t(t, s, m)		static_safe_cast_assert<t>(offsetof(s, m))
+	//#define sizeof_t(t, val)		static_safe_cast_assert<t>(sizeof(val))
 	
 }
+using namespace safe;
 	
-//// Units
-namespace units {
-	struct Time {
+////
+namespace str {
+	DECL u32 len (char const* str) {
+		char const* cur = str;
+		while (*cur != '\0') { ++cur; }
+		auto len = ptr_sub(str, cur);
+		assert(safe_cast(u32, len));
+		return (u32)len;
+	}
+}
+	
+//// lstr
+	template <u32 N>
+	DECL constexpr FORCEINLINE u32 lit_cstrlen (char const (&lit)[N]) {
+		STATIC_ASSERT(N > 0);
+		return N -1;
+	}
+
+	struct mlstr {
+		char*		str;
+		u32			len;
 		
-		f64			val;
-		char const*	unit;
+		constexpr mlstr (char* str, u32 len):	str{str}, len{len} {}
 		
-		DECLM void set (f64 val_) {
-			
-			val = val_;
-			val_ = fp::ABS(val_);
-			
-			if (		val_ < micro<f64>(1) ) {
-				val *=	1.0 / nano<f64>(1);
-				unit =	" ns";
-			} else if (	val_ < milli<f64>(1) ) {
-				val *=	1.0 / micro<f64>(1);
-				unit =	" us";
-			} else if (	val_ < 1.0 ) {
-				val *=	1.0 / milli<f64>(1);
-				unit =	" ms";
-			} else if (	val_ < 60.0 ) {
-				val *=	1.0 / 1.0;
-				unit =	" sec";
-			} else {
-				val *=	1.0 / 60.0;
-				unit =	" min";
-			}
+		constexpr static mlstr null () { return {nullptr, 0}; }
+		
+		static mlstr count_cstr (char* str) {
+			return mlstr(str, str::len(str));
 		}
 		
-		DECLM f64 set (u64 diff) { // return float so it can be used in throughput
-			auto ftime = (f64)diff * time::QPC::inv_freq;
-			set(ftime);
-			return ftime;
-		}
-		DECLM f64 set (u64 begin, u64 end) { // return float so it can be used in throughput
-			return set(end -begin);
-		}
-		
-		Time () = default;
-		
-		Time (f64 diff) {
-			set(diff);
-		}
-		
-		Time (u64 diff) {
-			set(diff);
-		}
-		Time (u64 begin, u64 end) {
-			set(begin, end);
+		constexpr operator bool () const { // Check if null
+			return str != nullptr;
 		}
 	};
-	struct Bytes {
+	struct lstr {
+		char const*	str;
+		u32			len;
 		
-		f64			val;
-		char const*	unit;
+		lstr () {}
+		constexpr lstr (char const* str, u32 len):	str{str}, len{len} {}
+		constexpr lstr (mlstr s):					str{s.str}, len{s.len} {}
 		
-		DECLM f64 set (u64 val_) { // return float so it can be used in throughput
-			
-			f64 fval = (f64)val_;
-			val = fval;
-			
-			if (		val_ < kibi<u64>(1) ) {
-				val *=	1.0 / 1.0;
-				unit =	" B";
-			} else if (	val_ < mebi<u64>(1) ) {
-				val *=	1.0 / kibi<f64>(1);
-				unit =	" KiB";
-			} else if (	val_ < gibi<u64>(1) ) {
-				val *=	1.0 / mebi<f64>(1);
-				unit =	" MiB";
-			} else if (	val_ < tebi<u64>(1) ) {
-				val *=	1.0 / gibi<f64>(1);
-				unit =	" GiB";
-			} else if (	val_ < pebi<u64>(1) ) {
-				val *=	1.0 / tebi<f64>(1);
-				unit =	" TiB";
-			} else {
-				val *=	1.0 / pebi<f64>(1);
-				unit =	" PiB";
-			}
-			
-			return fval;
+		constexpr static lstr null () { return {nullptr, 0}; }
+		
+		template <u32 LEN>
+		constexpr lstr (char const (& lit)[LEN]):	str{lit}, len{LEN -1} {
+			STATIC_ASSERT(LEN > 0);
 		}
 		
-		Bytes () = default;
-		Bytes (u64 val) {
-			set(val);
-		}
-	};
-	struct Throughput {
-		
-		f64			val;
-		char const*	unit;
-		
-		DECLM void set (f64 val_) {
-			
-			val = val_;
-			val_ = fp::ABS(val_);
-			
-			if (		val_ < kibi<f64>(1) ) {
-				val *=	1.0 / 1.0;
-				unit =	" B/s";
-			} else if (	val_ < mebi<f64>(1) ) {
-				val *=	1.0 / kibi<f64>(1);
-				unit =	" KiB/s";
-			} else if (	val_ < gibi<f64>(1) ) {
-				val *=	1.0 / mebi<f64>(1);
-				unit =	" MiB/s";
-			} else if (	val_ < tebi<f64>(1) ) {
-				val *=	1.0 / gibi<f64>(1);
-				unit =	" GiB/s";
-			} else if (	val_ < pebi<f64>(1) ) {
-				val *=	1.0 / tebi<f64>(1);
-				unit =	" TiB/s";
-			} else {
-				val *=	1.0 / pebi<f64>(1);
-				unit =	" PiB/s";
-			}
-		}
-		DECLM void set (f64 bytes, f64 time) {
-			set(bytes / time);
+		static lstr count_cstr (char const* str) {
+			return lstr(str, str::len(str));
 		}
 		
-		Throughput () = default;
-		Throughput (f64 val) {
-			set(val);
-		}
-		Throughput (f64 bytes, f64 time) {
-			set(bytes, time);
+		constexpr operator bool () const { // Check if null
+			return str != nullptr;
 		}
 	};
 	
-	struct Size_Throughput {
-		units::Bytes		s;
-		units::Throughput	thr;
-		
-		Size_Throughput (u64 size, u64 time) {
-			f64 fsize = s.set(size);
-			thr.set(fsize, (f64)time * time::QPC::inv_freq);
+////
+namespace str {
+	DECL bool comp (char const* a, char const* b) {
+		for (;;) {
+			if (*a != *b) {
+				return false;
+			}
+			if (*a == '\0') {
+				return true;
+			}
+			++a; ++b;
 		}
-	};
+	}
 	
-	struct Size_Time_Throughput {
-		units::Bytes		s;
-		units::Time			t;
-		units::Throughput	thr;
+	// Supports strings with length 0, even though no actual characters are compared, two strings of length 0 are considered equal
+	DECL bool comp (lstr cr a, lstr cr b) {
+		char const*	a_ = a.str;
+		char const*	b_ = b.str;
 		
-		Size_Time_Throughput (u64 size, u64 time) {
-			f64 fsize = s.set(size);
-			f64 ftime = t.set(time);
-			thr.set(fsize, ftime);
+		if (a.len != b.len) {
+			return false;
 		}
-	};
+		
+		char const* end = a_ +a.len;
+		while (a_ != end) {
+			if (*a_++ != *b_++) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	#if 0
+	DECL bool comp (char const* a, char const* b, uptr* out_len) {
+		char const* cur = a;
+		for (;;) {
+			if (*cur != *b) {
+				return false;
+			}
+			if (*cur == '\0') {
+				*out_len = getPtrOffset(a, cur);
+				return true;
+			}
+			++cur; ++b;
+		}
+	}
+	#endif
+	
+	DECL bool comp_up_to_count (char const* a, char const* b, uptr len) {
+		char const* end = a +len;
+		while (a != end) {
+			if (*a++ != *b) {
+				return false;
+			}
+			if (*b++ == '\0') {
+				return true; // NOTE: if strings are both null terminated and shorter than len and equal we return true
+			}
+		}
+		return true;
+	}
+	
+	// for c=='/'
+	// "blah/dir/file.ext" ->	"/file.ext"
+	// "file.ext" ->			"/file.ext"
+	// "blah/" ->				"/"
+	// "" ->					null
+	DECL lstr find_tail_incl (lstr path, char c) {
+		cstr ret = nullptr;
+		cstr cur = path.str;
+		cstr end = cur +path.len;
+		while (cur != end) {
+			if (*cur == c) {
+				ret = cur;
+			}
+			++cur;
+		}
+		return ret ? lstr(ret, (u32)ptr_sub(ret, end)): lstr(nullptr,0);
+	}
+	// for c=='/'
+	// "blah/dir/file.ext" ->	"file.ext"
+	// "file.ext" ->			"file.ext"
+	// "blah/" ->				""
+	// "" ->					""
+	DECL lstr find_tail_excl (lstr path, char c) {
+		cstr ret = nullptr;
+		cstr cur = path.str;
+		cstr end = cur +path.len;
+		while (cur != end) {
+			if (*cur == c) {
+				ret = cur +1;
+			}
+			++cur;
+		}
+		return ret ? lstr(ret, (u32)ptr_sub(ret, end)): lstr(nullptr,0);
+	}
+	
 }
 	
 ////
-	template<typename T, T VAL, uptr EXPONENT>
-	struct Pow {
-		static constexpr T val = VAL * Pow<T, VAL, EXPONENT -1>::val;
-		static_assert(val >= VAL, "");
-	};
-	template<typename T, T VAL> struct Pow<T, VAL, 0> {
-		static constexpr T val = 1;
-	};
+namespace path {
+	// "dir\file.ext" -> "file.ext"
+	// "file.ext" -> "file.ext"
+	DECL lstr find_filename (lstr path) {
+		return str::find_tail_excl(path, '\\');
+	}
 	
-	template<uptr BASE, uptr VAL>
-	struct LogPlusOne {
-		static constexpr uptr val = 1 +LogPlusOne<BASE, VAL / BASE>::val;
-	};
-	template<uptr BASE> struct LogPlusOne<BASE, 0> {
-		static constexpr uptr val = 0;
-	};
+	// "blah.ext" ->	".ext"
+	// "blah." ->		""
+	// "blah" ->		null
+	DECL lstr find_ext (lstr path) {
+		return str::find_tail_incl(path, '.');
+	}
+}
 	
-	template<typename T, uptr BASE, uptr VAL>
-	struct _alignUpToPowerOfWrapper {
-		static constexpr T val = static_cast<T>(Pow<T, 2, LogPlusOne<BASE, VAL -1>::val>::val);
-	};
-	template<typename T, uptr BASE> struct _alignUpToPowerOfWrapper<T, BASE, 0> {
-		static constexpr T val = 1;
-	};
+
+namespace parse_n {
 	
-	template<typename T, T BASE, T VAL> constexpr FORCEINLINE T				alignUpToPowerOf () {
-		return _alignUpToPowerOfWrapper<T, BASE, VAL>::val;
-	};
+	////////
 	
-	template <uptr LEN>
-	struct BitArray {
-		static constexpr uptr BITS = alignUpToPowerOf<uptr, 2, clamp(LEN, sizeof(byte)*8, sizeof(uptr)*8)>();
-		static constexpr uptr SIZE = BITS / 8;
-		typedef typename types::GetUInteger<SIZE>::type	t;
-		static constexpr t all_bits = limits::allBits<t>();
-		
-		t raw[align_up<uptr>(LEN, BITS) / BITS];
-		
-		bool get (uptr indx) {
-			return ((raw[indx / BITS] >> (indx % BITS)) & static_cast<t>(1)) != 0;
-		}
-		void set (uptr indx, bool val) {
-			t mask = (static_cast<t>(1) << (indx % BITS));
-			raw[indx / BITS] = (raw[indx / BITS] & ~mask)|(static_cast<t>(val) << (indx % BITS));
-		}
-		void set (uptr indx) {
-			raw[indx / BITS] = raw[indx / BITS] | (static_cast<t>(1) << (indx % BITS));
-		}
-		void clear (uptr indx) {
-			raw[indx / BITS] = raw[indx / BITS] & ~(static_cast<t>(1) << (indx % BITS));
-		}
-		void toggle (uptr indx) {
-			raw[indx / BITS] ^= static_cast<t>(1) << (indx % BITS);
-		}
-		
-		void set_all (bool val) {
-			t temp = val ? all_bits : 0;
-			for (uptr i=0; i<arrlenof(raw); ++i) {
-				raw[i] = temp;
-			}
-		}
-		void set_all () {
-			for (uptr i=0; i<arrlenof(raw); ++i) {
-				raw[i] = all_bits;
-			}
-		}
-		void clear_all () {
-			for (uptr i=0; i<arrlenof(raw); ++i) {
-				raw[i] = 0;
-			}
-		}
-		
-		bool comp_all (bool val) {
-			constexpr t last_mask_shift = (LEN % BITS) == 0 ? 0 : BITS -(LEN % BITS);
-			constexpr t last_mask = all_bits >> last_mask_shift;
-			
-			t temp = val ? all_bits : 0;
-			
-			bool ret = true;
-			for (uptr i=0; i<(arrlenof(raw) -1); ++i) {
-				if (raw[i] != temp) {
-					ret = false;
-				}
-			}
-			if ( (raw[arrlenof(raw) -1] & last_mask) != (temp & last_mask) ) {
-				ret = false;
-			}
-			return ret;
-		}
-	};
+	#define require(cond) if (!(cond)) { return 0; }
 	
+	#define WHITESPACE_C_CASES		' ':	case '\t'
+	#define NEWLINE_C_CASES			'\r':	case '\n'
 	
-	struct Filenames {
+	#define DEC_DIGIT_CASES \
+										'0': case '1': case '2': case '3': case '4': \
+									case '5': case '6': case '7': case '8': case '9'
+	
+	#define BIN_DIGIT_CASES			'0': case '1'
+	#define HEX_LOWER_CASES			'a': case 'b': case 'c': case 'd': case 'e': case 'f'
+	#define HEX_UPPER_CASES			'A': case 'B': case 'C': case 'D': case 'E': case 'F'
+	#define HEX_DIGIT_CASES			DEC_DIGIT_CASES: case HEX_LOWER_CASES: case HEX_UPPER_CASES
+	
+	DECL bool is_whitespace_c (char c) {
+		switch (c) {
+			case WHITESPACE_C_CASES:	return true;
+			default:					return false;
+		}
+	}
+	DECL bool is_newline_c (char c) {
+		switch (c) {
+			case NEWLINE_C_CASES:	return true;
+			default:				return false;
+		}
+	}
+	DECL bool is_dec_digit_c (char c) {
+		switch (c) {
+			case DEC_DIGIT_CASES:	return true;
+			default:				return false;
+		}
+	}
+	DECL bool is_bin_digit_c (char c) {
+		switch (c) {
+			case BIN_DIGIT_CASES:	return true;
+			default:				return false;
+		}
+	}
+	DECL bool is_hex_lower_c (char c) {
+		switch (c) {
+			case HEX_LOWER_CASES:	return true;
+			default:				return false;
+		}
+	}
+	DECL bool is_hex_upper_c (char c) {
+		switch (c) {
+			case HEX_UPPER_CASES:	return true;
+			default:				return false;
+		}
+	}
+	DECL bool is_hex_digit_c (char c) {
+		switch (c) {
+			case HEX_DIGIT_CASES:	return true;
+			default:				return false;
+		}
+	}
+	
+	DECL bool is_identifier_start_c (char c) {
+		return (c >= 'a' && c <= 'z') || c == '_' || (c >= 'A' && c <= 'Z');
+	}
+	DECL bool is_identifier_c (char c) {
+		return is_identifier_start_c(c) || is_dec_digit_c(c);
+	}
+	
+	DECL char* whitespace (char const* cur) {
+		require(*cur == ' ' || *cur == '\t');
 		
-		struct Filename {
-			u32 offs;
-			u32 len;
-		};
+		do {
+			++cur;
+		} while (*cur == ' ' || *cur == '\t');
 		
-		dynarr<Filename>	arr;
-		dynarr<char>		str_data;
+		return (char*)cur;
+	}
+	DECL char* newline (char const* cur) {
+		char c = *cur;
+		require(*cur == '\r' || *cur == '\n');
 		
-		// lstr becomes invalid if arr or str_data ever do a realloc
-		DECLM lstr get_filename (u32 indx) {
-			return { &str_data[arr[indx].offs], arr[indx].len };
+		++cur;
+		if (*cur != c && (*cur == '\r' || *cur == '\n')) {
+			++cur;
 		}
 		
-		DECLM void free () {
-			arr		.free();
-			str_data.free();
-		}
+		return (char*)cur;
+	}
+	DECL char* newline (char const* cur, u32* line_num, char** line_begin) {
+		require(cur = newline(cur));
 		
-	};
+		++(*line_num);
+		*line_begin = (char*)cur;
+		
+		return (char*)cur;
+	}
 	
-namespace list_of_files_in_n {
-	enum flags_e : u32 {
-							FILES=				0b000001,
-							FOLDERS=			0b000010,
-							FILTER_FILES=		0b000100,
-							RECURSIVE=			0b001000,
-							FILTER_INCL_EXCL=	0b010000,
-							NO_BASE_PATH=		0b100000, // Don't include base path in resulting filenames
-	};
-	DEFINE_ENUM_FLAG_OPS(flags_e, u32)
-	
-	static constexpr u32	FILTER_INCL=		0b000000;
-	static constexpr u32	FILTER_EXCL=		0b010000;
+	#undef require
 	
 }
 	
-	struct List_Of_Files_In {
-		list_of_files_in_n::flags_e		flags;
-		ui								filters_len;
-		lstr const*						filters;
-		lstr							base_path;
+	template <typename FUNC>
+	struct AtScopeExit {
+		FUNC	f;
+		void operator= (AtScopeExit &) = delete;
 		
-		DECLM void recurse (Filenames* out, lstr cr path) const {
-			using namespace list_of_files_in_n;
-			
-			WIN32_FIND_DATAA info;
-			
-			DEFER_POP(&working_stk);
-			char* list = working_stk.getTop<char>();
-			
-			HANDLE search_handle;
-			{
-				DEFER_POP(&working_stk);
-				lstr search_path = str::append_term(&working_stk, base_path, path, "*");
-				
-				search_handle = FindFirstFileA(search_path.str, &info);
-				if (search_handle == INVALID_HANDLE_VALUE) {
-					warning("directory_folder_list:: FindFirstFileA() failed, for path of '%'!", path);
-				}
-			}
-			
-			ui	count = 0;
-			
-			for (;;) {
-				if (	(info.cFileName[0] == '.' && info.cFileName[1] == '\0') ||
-						(info.cFileName[0] == '.' && info.cFileName[1] == '.' && info.cFileName[2] == '\0') ) {
-					// Ignore "." and ".." directories
-				} else {
-					bool is_dir = info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
-					char* filename = info.cFileName;
-					assert(filename[0] != '\0');
-					
-					working_stk.push<bool>(is_dir);
-					str::append_term(&working_stk, lstr::count_cstr(filename));
-					++count;
-				}
-				{
-					auto ret = FindNextFile(search_handle, &info);
-					if (ret == 0) {
-						auto err = GetLastError();
-						assert(err == ERROR_NO_MORE_FILES);
-						break;
-					}
-				}
-			}
-			
-			{
-				auto ret = FindClose(search_handle);
-				assert(ret != 0);
-			}
-			
-			lstr	base_path_ = base_path;
-			if (flags & NO_BASE_PATH) {
-				base_path_.len = 0;
-			}
-			
-			for (ui i=0; i<count; ++i) {
-				bool		is_dir = (bool)*list++;
-				char const*	filename_cstr = list;
-				
-				lstr filename = lstr::count_cstr(filename_cstr);
-				
-				if (	(!is_dir && (flags & FILES)) ||
-						(is_dir && (flags & FOLDERS)) ) {
-					
-					u32		str_offs = out->str_data.len;
-					
-					lstr	filepath =	str::append_term(&out->str_data, base_path_, path, filename);
-					out->arr.append( {str_offs, filepath.len} );
-					
-				}
-				
-				list += filename.len +1;
-				
-				if (is_dir && (flags & RECURSIVE)) {
-					DEFER_POP(&working_stk);
-					
-					assert(	filename.len > 0 &&
-							filename.str[filename.len -1] != '\\' &&
-							filename.str[filename.len -1] != '/' );
-					
-					lstr folder = str::append_term(&working_stk, path, filename, "/");
-					recurse(out, folder);
-				}
-			}
-			
-		}
-		
+		FORCEINLINE AtScopeExit (FUNC f): f(f) {}
+		FORCEINLINE ~AtScopeExit () { f(); }
 	};
 	
-	// base_path needs to end in a slash '/'
-	DECL Filenames list_of_files_in (lstr cr base_path, list_of_files_in_n::flags_e flags,
-			ui filters_len, lstr const* filters) {
-		using namespace list_of_files_in_n;
-		
-		assert(	(flags & ~(FILES|FOLDERS|RECURSIVE|NO_BASE_PATH)) == 0 &&
-				filters_len == 0 && filters == nullptr, "Not implemented");
-		
-		Filenames ret;
-		ret.arr		.init(0, 256);
-		ret.str_data.init(0, 256 * 32);
-		
-		auto builder = List_Of_Files_In{flags, filters_len, filters, base_path};
-		builder.recurse(&ret, lstr(""));
-		
-		ret.arr		.fit_cap_exact();
-		ret.str_data.fit_cap_exact();
-		
-		return ret;
+	struct DeferTask {};
+	
+	template<typename FUNC>
+	DECL AtScopeExit<FUNC> operator+(DeferTask, FUNC f) {
+		return AtScopeExit<FUNC>(f);
 	}
 	
-	DECL Filenames list_of_folders_in (lstr cr base_path) {
-		using namespace list_of_files_in_n;
-		return list_of_files_in(base_path, FOLDERS|NO_BASE_PATH, 0, nullptr);
+	#define _defer(counter) auto CONCAT(func, counter) = DeferTask() +[&] () 
+	#define defer _defer(__COUNTER__)
+	// use like: defer { lambda code };
+	
+	// defer with capture-by-value lambda
+	#define _defer_by_val(counter) auto CONCAT(func, counter) = DeferTask() +[=] () 
+	#define defer_by_val _defer_by_val(__COUNTER__)
+	
+	#undef DEFINE_ENUM_FLAG_OPS
+	#define DEFINE_ENUM_FLAG_OPS(TYPE, UNDERLYING_TYPE) \
+		DECL constexpr FORCEINLINE TYPE& operator|= (TYPE& l, TYPE r) { \
+			return l = (TYPE)((UNDERLYING_TYPE)l | (UNDERLYING_TYPE)r); \
+		} \
+		DECL constexpr FORCEINLINE TYPE& operator&= (TYPE& l, TYPE r) { \
+			return l = (TYPE)((UNDERLYING_TYPE)l & (UNDERLYING_TYPE)r); \
+		} \
+		DECL constexpr FORCEINLINE TYPE operator| (TYPE l, TYPE r) { \
+			return (TYPE)((UNDERLYING_TYPE)l | (UNDERLYING_TYPE)r); \
+		} \
+		DECL constexpr FORCEINLINE TYPE operator& (TYPE l, TYPE r) { \
+			return (TYPE)((UNDERLYING_TYPE)l & (UNDERLYING_TYPE)r); \
+		} \
+		DECL constexpr FORCEINLINE TYPE operator~ (TYPE e) { \
+			return (TYPE)(~(UNDERLYING_TYPE)e); \
+		}
+	
+	#define DEFINE_ENUM_ITER_OPS(TYPE, UNDERLYING_TYPE) \
+		DECL constexpr FORCEINLINE TYPE& operator++ (TYPE& val) { \
+			return val = (TYPE)((UNDERLYING_TYPE)val +1); \
+		} \
+		DECL constexpr FORCEINLINE DEPRECATED TYPE inc (TYPE val) { \
+			return (TYPE)((UNDERLYING_TYPE)val +1); \
+		}
+	
+////
+	DECLD constexpr char hex_digits[16] = { '0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f' };
+	
+	DECL u32 print_escaped_ascii_len (char c, char* buf) { // Buf must be at least 4 chars large
+		buf[0] = '\\';
+		buf[1] = '\0';
+		buf[2] = '\0';
+		buf[3] = '\0';
+		
+		u32 len;
+		if (c >= 0x20 && c <= 0x7e) { // ' ' - '~' (All printable characters)
+			buf[0] = c;
+			len = 1;
+		} else {
+			switch (c) {
+				case '\0':						// NUL		Null
+				{ // 0x00
+					buf[1] = '0';
+					len = 2;
+				} break;
+				
+				case '\a':						// BEL		Bell
+				case '\b':						// BS		Backspace
+				case '\t':						// HT		Horizontal Tab
+				case '\n':						// LF		Line Feed
+				case '\v':						// VT		Vertical Tab
+				case '\f':						// FF		Form Feed
+				case '\r':						// CR		Carriage Return
+				{ // 0x07 - 0x0d
+					static constexpr char arr[7] = { 'a','b','t','n','v','f','r' };
+					buf[1] = arr[c -7];
+					len = 2;
+				} break;
+				
+				case '\x01':					// SOH		Start of Heading
+				case '\x02':					// STX		Start of Text
+				case '\x03':					// ETX		End of Text
+				case '\x04':					// EOT		End of Transmission
+				case '\x05':					// ENQ		Enquiry
+				case '\x06':					// ACK		Acknowledgment
+				
+				case '\x0e':					// SO		Shift Out
+				case '\x0f':					// SI		Shift In
+				case '\x10':					// DLE		Data Link Escape
+				case '\x11':					// DC1		Device Control 1 (XON)
+				case '\x12':					// DC2		Device Control 2
+				case '\x13':					// DC3		Device Control 3 (XOFF)
+				case '\x14':					// DC4		Device Control 4
+				case '\x15':					// NAK		Negative Acknowledgment
+				case '\x16':					// SYN		Synchronous Idle
+				case '\x17':					// ETB		End of Transmission Block
+				case '\x18':					// CAN		Cancel
+				case '\x19':					// EM		End of Medium
+				case '\x1a':					// SUB		Substitute
+				case '\x1b':					// ESC		Escape
+				case '\x1c':					// FS		File Separator
+				case '\x1d':					// GS		Group Separator
+				case '\x1e':					// RS		Record Separator
+				case '\x1f':					// US		Unit Separator
+				case '\x7f':					// DEL		Delete
+				default:
+				{ // 0x01 - 0x06  and  0x0e - 0x1f  and  0x7f - 0xff
+					buf[1] = 'x';
+					buf[2] = hex_digits[(c >> 4) & 0x0f];
+					buf[3] = hex_digits[(c >> 0) & 0x0f];
+					len = 4;
+				} break;
+			}
+		}
+		return len;
 	}
-	DECL Filenames recursive_list_of_files_in (lstr cr base_path) {
-		using namespace list_of_files_in_n;
-		return list_of_files_in(base_path, FILES|RECURSIVE|NO_BASE_PATH, 0, nullptr);
+	DECL char* print_escaped_ascii_term (char c, char* buf) { // Buf must be at least 5 chars large
+		buf[4] = '\0';
+		print_escaped_ascii_len(c, buf);
+		return buf;
 	}
 	

@@ -1,15 +1,47 @@
 <NotepadPlus>
     <Session activeView="0">
         <mainView activeIndex="1">
-            <File firstVisibleLine="0" xOffset="0" scrollWidth="1463" startPos="0" endPos="0" selMode="0" lang="Batch" encoding="-1" filename="D:\Cproj\flamegraph\build.bat" backupFilePath="" originalFileLastModifTimestamp="1501454712" />
-            <File firstVisibleLine="55" xOffset="0" scrollWidth="1106" startPos="4231" endPos="4231" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\todo.txt" backupFilePath="" originalFileLastModifTimestamp="1501480500" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="1463" startPos="0" endPos="0" selMode="0" lang="Batch" encoding="-1" filename="D:\Cproj\flamegraph\build.bat" backupFilePath="" originalFileLastModifTimestamp="1501897431" />
+            <File firstVisibleLine="68" xOffset="0" scrollWidth="1106" startPos="3206" endPos="3206" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\todo.txt" backupFilePath="" originalFileLastModifTimestamp="1501977330" />
             <File firstVisibleLine="0" xOffset="0" scrollWidth="1" startPos="0" endPos="0" selMode="0" lang="Normal Text" encoding="-1" filename="D:\Cproj\flamegraph\notes.txt" backupFilePath="" originalFileLastModifTimestamp="1501444567" />
-            <File firstVisibleLine="0" xOffset="0" scrollWidth="1026" startPos="1241" endPos="1241" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\src\global_includes.h" backupFilePath="" originalFileLastModifTimestamp="1501477224" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="1026" startPos="1323" endPos="1323" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\src\global_includes.h" backupFilePath="" originalFileLastModifTimestamp="1501477224" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="938" startPos="1069" endPos="1069" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\src\flamegraph_data_file.h" backupFilePath="" originalFileLastModifTimestamp="1501598980" />
         </mainView>
         <subView activeIndex="2">
             <File firstVisibleLine="0" xOffset="0" scrollWidth="910" startPos="0" endPos="0" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\src\graph.cpp" backupFilePath="" originalFileLastModifTimestamp="1501444567" />
-            <File firstVisibleLine="0" xOffset="0" scrollWidth="777" startPos="0" endPos="0" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\src\platform.h" backupFilePath="" originalFileLastModifTimestamp="1501468193" />
-            <File firstVisibleLine="1756" xOffset="0" scrollWidth="931" startPos="47171" endPos="47171" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\src\engine.h" backupFilePath="" originalFileLastModifTimestamp="1501470318">
+            <File firstVisibleLine="220" xOffset="0" scrollWidth="1197" startPos="28382" endPos="28382" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\src\platform.h" backupFilePath="" originalFileLastModifTimestamp="1501975497">
+                <Fold line="17" />
+                <Fold line="47" />
+                <Fold line="81" />
+                <Fold line="115" />
+                <Fold line="160" />
+                <Fold line="164" />
+                <Fold line="169" />
+                <Fold line="175" />
+                <Fold line="179" />
+                <Fold line="243" />
+                <Fold line="303" />
+                <Fold line="310" />
+                <Fold line="578" />
+                <Fold line="608" />
+                <Fold line="632" />
+                <Fold line="662" />
+                <Fold line="670" />
+                <Fold line="674" />
+                <Fold line="926" />
+                <Fold line="983" />
+                <Fold line="991" />
+                <Fold line="1007" />
+                <Fold line="1021" />
+                <Fold line="1104" />
+                <Fold line="1110" />
+                <Fold line="1175" />
+                <Fold line="1184" />
+                <Fold line="1211" />
+                <Fold line="1751" />
+                <Fold line="1890" />
+            </File>
+            <File firstVisibleLine="1781" xOffset="0" scrollWidth="952" startPos="47864" endPos="47864" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\src\engine.h" backupFilePath="" originalFileLastModifTimestamp="1501976678">
                 <Fold line="3" />
                 <Fold line="24" />
                 <Fold line="27" />
@@ -21,9 +53,7 @@
                 <Fold line="54" />
                 <Fold line="65" />
                 <Fold line="69" />
-                <Fold line="70" />
                 <Fold line="76" />
-                <Fold line="77" />
                 <Fold line="84" />
                 <Fold line="87" />
                 <Fold line="96" />
@@ -36,7 +66,6 @@
                 <Fold line="146" />
                 <Fold line="154" />
                 <Fold line="163" />
-                <Fold line="164" />
                 <Fold line="185" />
                 <Fold line="192" />
                 <Fold line="198" />
@@ -57,78 +86,68 @@
                 <Fold line="330" />
                 <Fold line="336" />
                 <Fold line="340" />
-                <Fold line="359" />
-                <Fold line="412" />
-                <Fold line="417" />
-                <Fold line="419" />
-                <Fold line="515" />
-                <Fold line="541" />
+                <Fold line="411" />
+                <Fold line="418" />
+                <Fold line="514" />
+                <Fold line="540" />
                 <Fold line="553" />
-                <Fold line="565" />
-                <Fold line="577" />
-                <Fold line="622" />
-                <Fold line="633" />
-                <Fold line="682" />
-                <Fold line="713" />
-                <Fold line="802" />
-                <Fold line="832" />
-                <Fold line="852" />
-                <Fold line="888" />
-                <Fold line="902" />
-                <Fold line="906" />
-                <Fold line="916" />
-                <Fold line="921" />
-                <Fold line="929" />
-                <Fold line="936" />
-                <Fold line="947" />
-                <Fold line="1000" />
-                <Fold line="1008" />
-                <Fold line="1021" />
-                <Fold line="1086" />
-                <Fold line="1094" />
-                <Fold line="1108" />
-                <Fold line="1112" />
-                <Fold line="1116" />
-                <Fold line="1120" />
-                <Fold line="1132" />
-                <Fold line="1144" />
-                <Fold line="1153" />
+                <Fold line="564" />
+                <Fold line="576" />
+                <Fold line="621" />
+                <Fold line="632" />
+                <Fold line="681" />
+                <Fold line="712" />
+                <Fold line="801" />
+                <Fold line="831" />
+                <Fold line="851" />
+                <Fold line="887" />
+                <Fold line="901" />
+                <Fold line="905" />
+                <Fold line="915" />
+                <Fold line="920" />
+                <Fold line="928" />
+                <Fold line="935" />
+                <Fold line="946" />
+                <Fold line="999" />
+                <Fold line="1007" />
+                <Fold line="1020" />
+                <Fold line="1085" />
+                <Fold line="1093" />
+                <Fold line="1107" />
+                <Fold line="1111" />
+                <Fold line="1115" />
+                <Fold line="1119" />
+                <Fold line="1131" />
+                <Fold line="1143" />
+                <Fold line="1152" />
+                <Fold line="1157" />
                 <Fold line="1158" />
-                <Fold line="1159" />
-                <Fold line="1164" />
-                <Fold line="1171" />
-                <Fold line="1332" />
-                <Fold line="1347" />
-                <Fold line="1477" />
-                <Fold line="1482" />
-                <Fold line="1486" />
-                <Fold line="1491" />
-                <Fold line="1495" />
-                <Fold line="1601" />
-                <Fold line="1605" />
-                <Fold line="1717" />
-                <Fold line="1730" />
-                <Fold line="1737" />
-                <Fold line="1788" />
-                <Fold line="1792" />
-                <Fold line="1800" />
-                <Fold line="1887" />
-                <Fold line="1923" />
-                <Fold line="1927" />
-                <Fold line="1945" />
-                <Fold line="1993" />
-                <Fold line="2009" />
-                <Fold line="2021" />
-                <Fold line="2029" />
-                <Fold line="2042" />
-                <Fold line="2050" />
-                <Fold line="2085" />
-                <Fold line="2107" />
-                <Fold line="2110" />
-                <Fold line="2113" />
-                <Fold line="2116" />
-                <Fold line="2120" />
-                <Fold line="2137" />
+                <Fold line="1163" />
+                <Fold line="1170" />
+                <Fold line="1358" />
+                <Fold line="1388" />
+                <Fold line="1444" />
+                <Fold line="1459" />
+                <Fold line="1503" />
+                <Fold line="1533" />
+                <Fold line="1579" />
+                <Fold line="1593" />
+                <Fold line="1620" />
+                <Fold line="1644" />
+                <Fold line="1648" />
+                <Fold line="1823" />
+                <Fold line="1845" />
+                <Fold line="1854" />
+                <Fold line="1864" />
+                <Fold line="1868" />
+                <Fold line="1876" />
+                <Fold line="1963" />
+                <Fold line="1967" />
+                <Fold line="2011" />
+                <Fold line="2015" />
+                <Fold line="2033" />
+                <Fold line="2081" />
+                <Fold line="2145" />
             </File>
         </subView>
     </Session>

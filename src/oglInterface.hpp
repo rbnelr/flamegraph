@@ -3,7 +3,7 @@
 
 #include "gl/glext.h" // Have to include glext.h before glcorearb.h (or only glext.h) ? else some extension stuff does not get included because of GL_VERSION_?_? 'include' guards
 //#include "glcorearb_no_windows_h_bloat.h"
-#include "wglext_h_helper.h"
+#include "wglext_h_helper.hpp"
 
 //#include "gl/glcorearb.h"
 
@@ -74,10 +74,10 @@ DECL void unavalibleOGLFunc () {
 #endif
 
 DECLD constexpr uptr FUNC_COUNT =
-	#include "oglInterface_funcCount.h"
+	#include "oglInterface_funcCount.hpp"
 ;
 
-#include "oglInterface_funcNames.h"
+#include "oglInterface_funcNames.hpp"
 DECLD constexpr char const* FUNC_NAMES[FUNC_COUNT] = {
 	#define X(name, fp_t) STRINGIFY(name),
 	OGL_FUNC_NAMES
@@ -178,4 +178,4 @@ DECL err_e catchOpenGLErrors () {
 #define CALL_OGL_FUNC_TBL(name, ...) gl_tbl.name(__VA_ARGS__)
 //#define CALL_OGL_FUNC(name, ...) name(__VA_ARGS__)
 
-#include "oglInterface_funcWrappers.h"
+#include "oglInterface_funcWrappers.hpp"

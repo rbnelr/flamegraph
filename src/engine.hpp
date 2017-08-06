@@ -259,7 +259,7 @@ DECL m3 rotate_Z_90deg (si multiple) {
 };
 
 //// UBO
-#include "ogl_ubo_interface.h"
+#include "ogl_ubo_interface.hpp"
 
 #pragma pack (push, 1)
 
@@ -1337,7 +1337,7 @@ DECLD GLuint					shaders[PROG_COUNT];
 DECLD GLuint					samplers[SAMPL_COUNT];
 DECLD GLuint					textures[TEX_COUNT];
 
-#include "flamegraph_data_file.h"
+#include "flamegraph_data_file.hpp"
 namespace f = flamegraph_data_file;
 
 struct Block {

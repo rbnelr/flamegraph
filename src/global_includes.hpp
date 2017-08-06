@@ -15,7 +15,7 @@
 	#define STATIC_ASSERT(cond) static_assert((cond), TO_STR(cond)) // This does not work for some reason???
 	
 //// 
-	#include "comp_arch_platf_specifics.h"
+	#include "comp_arch_platf_specifics.hpp"
 	
 	#define DECLD									static				// declare global data
 	#define DECL									static VECTORCALL	// declare global function
@@ -26,11 +26,11 @@
 	#define DECLT									VECTORCALL			// declare template
 	
 //// typedefs for basic types
-	#include "types.h"
-	#include "type_utils.h"
+	#include "types.hpp"
+	#include "type_utils.hpp"
 	
 ////
-	#include "debug.h"
+	#include "debug.hpp"
 	
 	enum err_e {
 		OK=0,
@@ -42,11 +42,11 @@
 	};
 	
 //// 
-	#include "simd.h"
-	#include "floating_point.h"
+	#include "simd.hpp"
+	#include "floating_point.hpp"
 	
 ////
-	#include "utility.h"
+	#include "utility.hpp"
 	
 ////
 	//#define DBG_MEMORY DEBUG
@@ -61,16 +61,16 @@
 	
 	#include <cstdlib>
 	
-	#include "stack.h"
-	#include "dynarr.h"
+	#include "stack.hpp"
+	#include "dynarr.hpp"
 	
 	DECLD thread_local Stack	working_stk =		makeStack(0, mebi<uptr>(32));
 	
 //// windows header #include
-	#include "windows_h_helper.h"
+	#include "windows_h_helper.hpp"
 	
 ////
-	#include "print.h"
+	#include "print.hpp"
 	using print_n::print_type_e;
 	using print_n::escaped;
 	using print_n::hex;
@@ -78,29 +78,29 @@
 	using print_n::repeat;
 	
 ////
-	#include "windows_utility.h"
+	#include "windows_utility.hpp"
 	
 ////
-	#include "sync.h"
+	#include "sync.hpp"
 	
 ////
-	#include "time.h"
+	#include "time.hpp"
 	
 ////
-	#include "utility.hpp"
+	#include "utility.cpp"
 	
 ////
-	#include "stack.hpp"
-	#include "dynarr.hpp"
+	#include "stack.cpp"
+	#include "dynarr.cpp"
 	
 ////
-	#include "print.hpp"
+	#include "print.cpp"
 	
 ////
-	#include "debug.hpp"
+	#include "debug.cpp"
 	
 ////
-	#include "vector.h"
+	#include "vector.hpp"
 	
 	typedef tv2<u32>	v2u32;
 	
