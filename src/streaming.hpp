@@ -13,7 +13,6 @@ namespace winsock {
 	}
 	
 	#define PROFILE_STREAMING_PORT	27015
-	#define SERVER_IP				"127.0.0.1"
 	
 }
 namespace streaming {
@@ -100,6 +99,15 @@ namespace streaming {
 		SOCKET serv_sock;
 		
 		void connect_to_server () {
+			cstr server_ip;
+			{
+				if (cmd_line.argc >= 2) {
+					server_ip = cmd_line.argv[1];
+				} else {
+					server_ip = "127.0.0.1";
+				}
+			}
+			
 			{
 				addrinfo hints = {}; // zero
 				hints.ai_family =	AF_UNSPEC;
@@ -109,7 +117,7 @@ namespace streaming {
 				addrinfo* result;
 				defer { freeaddrinfo(result); };
 				{
-					auto ret = getaddrinfo(SERVER_IP, TO_STR(PROFILE_STREAMING_PORT), &hints, &result);
+					auto ret = getaddrinfo(server_ip, TO_STR(PROFILE_STREAMING_PORT), &hints, &result);
 					assert(ret == 0, "%", ret);
 				}
 				
@@ -123,7 +131,7 @@ namespace streaming {
 				{
 					auto ret = connect(serv_sock, result->ai_addr, result->ai_addrlen);
 					if (ret == SOCKET_ERROR) {
-						warning("Cannot connect to server %", SERVER_IP ":" TO_STR(PROFILE_STREAMING_PORT));
+						warning("Cannot connect to server %:%", server_ip, TO_STR(PROFILE_STREAMING_PORT));
 						serv_sock = INVALID_SOCKET;
 					}
 				}

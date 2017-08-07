@@ -211,16 +211,18 @@ namespace time {
 }
 	
 ////
-	DECLD constexpr lstr	SHADERS_DIR =						"shaders/";
-	#define					TEXTURES_DIR						"textures/"
-	#define					WINDOW_PLACEMENT_SAVE_FILENAME		"saves/window_placement_%.save\\0" // % is some unique computer identifier
-	#define					WINDOW_PLACEMENT_SAVE_FILENAME		"saves/window_placement_%.save\\0" // % is some unique computer identifier
-	
-	DECLD cstr				input_filename;
-	
-	typedef s32							resolution_t;
-	typedef tv2<resolution_t>			resolution_v;
-	
+DECLD constexpr cstr	WINDOW_TITLE =						"Flamegraph";
+
+DECLD constexpr lstr	SHADERS_DIR =						"shaders/";
+#define					TEXTURES_DIR						"textures/"
+#define					WINDOW_PLACEMENT_SAVE_FILENAME		"saves/window_placement_%.save\\0" // % is some unique computer identifier
+#define					WINDOW_PLACEMENT_SAVE_FILENAME		"saves/window_placement_%.save\\0" // % is some unique computer identifier
+
+DECLD cstr				input_filename;
+
+typedef s32							resolution_t;
+typedef tv2<resolution_t>			resolution_v;
+
 namespace platform {
 	
 	DECLD HANDLE	h_engine_thread;
@@ -1769,7 +1771,7 @@ namespace platform {
 			wndClass.hInstance =		hInstance;
 			wndClass.hIcon =			hIcon;
 			wndClass.hCursor =			hCursor;
-			wndClass.lpszClassName =	"space_rocks gl window";
+			wndClass.lpszClassName =	win32::get_exe_path(&working_stk).str;;
 			
 			cursor_handle = hCursor;
 			
@@ -1809,7 +1811,7 @@ namespace platform {
 			bool save_loaded = init_window_placement_save();
 			
 			hWnd = CreateWindowExA(
-					windowExStyle, reinterpret_cast<LPCTSTR>(wndClassAtom), "OpenGL Tutorial",
+					windowExStyle, reinterpret_cast<LPCTSTR>(wndClassAtom), WINDOW_TITLE,
 					windowStyle & ~WS_VISIBLE,
 					rect.x, rect.y, rect.w, rect.h,
 					NULL, NULL, hInstance, NULL);
