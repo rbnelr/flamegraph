@@ -58,9 +58,9 @@ namespace flamegraph_data_file {
 	};
 	#endif
 	
-	DECL mlstr get_thread_name (u32 thread_i, File_Header* header, Thread* threads, char* thr_str_tbl) {
-		assert(thread_i < header->thr_name_str_tbl_size);
-		assert(threads[thread_i].name_tbl_offs < header->thr_name_str_tbl_size);
+	DECL mlstr get_thread_name (u32 thread_i, File_Header cr header, Thread* threads, char* thr_str_tbl) {
+		assert(thread_i < header.thr_name_str_tbl_size);
+		assert(threads[thread_i].name_tbl_offs < header.thr_name_str_tbl_size);
 		return mlstr::count_cstr( thr_str_tbl +threads[thread_i].name_tbl_offs );
 	}
 	

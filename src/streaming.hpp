@@ -15,123 +15,125 @@ namespace winsock {
 	#define PROFILE_STREAMING_PORT	27015
 	#define SERVER_IP				"127.0.0.1"
 	
-	void serv_test () {
-		
+}
+namespace streaming {
+	struct Server {
 		SOCKET listen_sock;
-		{
-			addrinfo hints = {}; // zero
-			hints.ai_family =	AF_INET;
-			hints.ai_socktype =	SOCK_STREAM;
-			hints.ai_protocol =	IPPROTO_TCP;
-			hints.ai_flags =	AI_PASSIVE;
-			
-			addrinfo* result;
-			defer { freeaddrinfo(result); };
-			
-			{
-				auto ret = getaddrinfo(NULL, TO_STR(PROFILE_STREAMING_PORT), &hints, &result);
-				assert(ret == 0, "%", ret);
-			}
-			
-			{
-				listen_sock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-				assert(listen_sock != INVALID_SOCKET);
-			}
-			
-			{
-				auto ret = bind(listen_sock, result->ai_addr, (int)result->ai_addrlen);
-				assert(ret != SOCKET_ERROR);
-			}
-			
-		}
+		SOCKET client_sock;
 		
-		for (;;) {
+		void start () {
+			{
+				addrinfo hints = {}; // zero
+				hints.ai_family =	AF_INET;
+				hints.ai_socktype =	SOCK_STREAM;
+				hints.ai_protocol =	IPPROTO_TCP;
+				hints.ai_flags =	AI_PASSIVE;
+				
+				addrinfo* result;
+				defer { freeaddrinfo(result); };
+				
+				{
+					auto ret = getaddrinfo(NULL, TO_STR(PROFILE_STREAMING_PORT), &hints, &result);
+					assert(ret == 0, "%", ret);
+				}
+				
+				{
+					listen_sock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+					assert(listen_sock != INVALID_SOCKET);
+				}
+				
+				{
+					auto ret = bind(listen_sock, result->ai_addr, (int)result->ai_addrlen);
+					assert(ret != SOCKET_ERROR);
+				}
+			}
+			
 			{
 				auto ret = listen(listen_sock, SOMAXCONN);
 				assert(ret != SOCKET_ERROR);
 			}
 			
+		}
+		
+		void connect_to_client () {
+			
 			print(">>> waiting for client\n");
 			
-			SOCKET client_sock;
 			{
 				client_sock = accept(listen_sock, NULL, NULL);
 				assert(client_sock != INVALID_SOCKET);
 			}
 			
-			print(">>> client connected, reading messages\n");
+			print(">>> client connected\n");
 			
-			for (;;) {
-				char buf[512];
+		}
+		
+		void read (void* buf, u64 buf_size) {
+			
+			auto ret = recv(client_sock, (byte*)buf, safe_cast_assert(int, buf_size), 0);
+			if (ret > 0) {			// success
 				
-				auto ret = recv(client_sock, buf, arrlenof<int>(buf), 0);
-				if (ret > 0) {
-					print(">>> recieved % bytes: '%'\n", ret, escaped(lstr(buf, (u32)ret)));
-					
-				} else if (ret == 0) {
-					break;
+				print(">>> recieved % bytes\n", ret);
+				
+			} else if (ret == 0) {	// graceful connection close
+				
+			} else {				// failed
+				
+				auto err = WSAGetLastError();
+				if (err == WSAECONNRESET) {
+					assert(false, "hard connection close [WSAECONNRESET]");
 				} else {
-					// failed
-					auto err = WSAGetLastError();
-					if (err == WSAECONNRESET) {
-						warning("hard connection reset [WSAECONNRESET]");
-					} else {
-						warning("recv failed: % [%]", ret, err);
-					}
-					break;
+					assert(false, "recv failed: % [%]", ret, err);
 				}
 			}
-			
-			print(">>> connection closed\n");
 		}
-	}
+		
+	};
 	
-	void client_test () {
-		
+	struct Client {
 		SOCKET serv_sock;
-		{
-			addrinfo hints = {}; // zero
-			hints.ai_family =	AF_UNSPEC;
-			hints.ai_socktype =	SOCK_STREAM;
-			hints.ai_protocol =	IPPROTO_TCP;
-			
-			addrinfo* result;
-			defer { freeaddrinfo(result); };
-			{
-				auto ret = getaddrinfo(SERVER_IP, TO_STR(PROFILE_STREAMING_PORT), &hints, &result);
-				assert(ret == 0, "%", ret);
-			}
-			
-			{
-				serv_sock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-				assert(serv_sock != INVALID_SOCKET);
-			}
-			
-			print(">>> trying to connect to server\n");
-			
-			{
-				auto ret = connect(serv_sock, result->ai_addr, result->ai_addrlen);
-				if (ret == SOCKET_ERROR) {
-					warning("Cannot connect to server %", SERVER_IP ":" TO_STR(PROFILE_STREAMING_PORT));
-					serv_sock = INVALID_SOCKET;
-				}
-			}
-			
-		}
 		
-		print(">>> sending initial message\n");
-		
-		if (serv_sock != INVALID_SOCKET) {
-			
-			for (u32 i=0; i<10; ++i) {
-				DEFER_POP(&working_stk);
-				lstr msg = print_working_stk("Hello World %\\0", i);
+		void connect_to_server () {
+			{
+				addrinfo hints = {}; // zero
+				hints.ai_family =	AF_UNSPEC;
+				hints.ai_socktype =	SOCK_STREAM;
+				hints.ai_protocol =	IPPROTO_TCP;
 				
-				auto ret = send(serv_sock, msg.str, safe_cast_assert(int, msg.len), 0);
-				assert(ret != SOCKET_ERROR);
+				addrinfo* result;
+				defer { freeaddrinfo(result); };
+				{
+					auto ret = getaddrinfo(SERVER_IP, TO_STR(PROFILE_STREAMING_PORT), &hints, &result);
+					assert(ret == 0, "%", ret);
+				}
+				
+				{
+					serv_sock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+					assert(serv_sock != INVALID_SOCKET);
+				}
+				
+				print(">>> trying to connect to server\n");
+				
+				{
+					auto ret = connect(serv_sock, result->ai_addr, result->ai_addrlen);
+					if (ret == SOCKET_ERROR) {
+						warning("Cannot connect to server %", SERVER_IP ":" TO_STR(PROFILE_STREAMING_PORT));
+						serv_sock = INVALID_SOCKET;
+					}
+				}
+				
 			}
+			
 		}
 		
-	}
+		void write (void* data, u64 size) {
+			if (serv_sock == INVALID_SOCKET) return;
+			
+			auto ret = send(serv_sock, (char*)data, safe_cast_assert(int, size), 0);
+			assert(ret != SOCKET_ERROR);
+			
+		}
+		
+	};
 	
 }

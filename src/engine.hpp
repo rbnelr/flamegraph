@@ -1659,14 +1659,76 @@ DECLD constexpr tv3<GLubyte> COLS[8] = {
 
 #include "streaming.hpp"
 
-//DECLD Read_Pipe			stream_pipe = {}; // init OVERLAPPED to zero
+DECLD streaming::Server		stream;
 
 void at_init () {
 	
 	winsock::init();
-	winsock::serv_test();
 	
-	#if 0
+	stream.start();
+	stream.connect_to_client();
+	
+	bool streamed = true;
+	
+	{
+		f::File_Header f_header;
+		stream.read(&f_header, sizeof(f_header));
+		
+		assert(f_header.id.i == f::FILE_ID.i);
+		
+		u64 remain_header_size = (f_header.thread_count * sizeof(f::Thread)) +f_header.thr_name_str_tbl_size;
+		
+		assert((remain_header_size +sizeof(f_header)) <= f_header.file_size);
+		
+		DEFER_POP(&working_stk);
+		byte* remain_header = working_stk.pushArr<byte>(remain_header_size);
+		
+		stream.read(remain_header, remain_header_size);
+		
+		if (streamed) {
+			assert(f_header.total_event_count == 0);
+			assert(f_header.chunks_count == 0);
+		}
+		
+		print("File_Header: file_size %	 total_event_count %  thread_count %  chunks_count %\n",
+					f_header.file_size,
+					f_header.total_event_count,
+					f_header.thread_count,
+					f_header.chunks_count );
+		
+		chunks_count = f_header.chunks_count;
+		
+		f::Thread*	f_threads = (f::Thread*)(remain_header);
+		
+		char*		f_thr_str_tbl = (char*)(f_threads +f_header.thread_count);
+		
+		threads.init(THREADS_DYNARR_CAP);
+		
+		u32 threads_event_counter = 0;
+		
+		for (u32 i=0; i<f_header.thread_count; ++i) {
+			lstr name = f::get_thread_name(i, f_header, f_threads, f_thr_str_tbl);
+			
+			#if 1
+			print("Thread % '%': sec_per_unit %	 units_per_sec %  event_count %\n",
+					i, name,
+					f_threads[i].sec_per_unit, 1.0f / f_threads[i].sec_per_unit,
+					f_threads[i].event_count );
+			#endif
+			
+			threads_event_counter += f_threads[i].event_count;
+			
+			auto* thr = &threads.append();
+			thr->init(name, f_threads[i].sec_per_unit);
+		}
+		
+		assert(threads_event_counter == f_header.total_event_count);
+		
+		blocks_str_storage	.init(BLOCKS_STR_TABLE_CAP);
+		blocks_strs			.init(UNIQUE_BLOCKS_DYNARR_CAP);
+	}
+	
+	#if 0 // old code
 	Mem_Block	data;
 	assert(!platform::read_whole_file_onto(&working_stk, input_filename, 0, &data));
 	
