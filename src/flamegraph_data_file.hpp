@@ -18,7 +18,8 @@ namespace flamegraph_data_file {
 	
 	struct File_Header {
 		file_id id;
-		u64		file_size; // file size SHOULD never be even close to 4 GiB, but could in theory be (block_count::max * sizeof(Block))
+		u64		file_size;	// file size SHOULD never be even close to 4 GiB, but could in theory be (block_count::max * sizeof(Block))
+							//  when streaming the data over tcp, this is just the header size (File_Header +Threads +thread_str_table)
 		u32		total_event_count;
 		u32		thr_name_str_tbl_size;
 		u32		thread_count;
@@ -31,7 +32,7 @@ namespace flamegraph_data_file {
 	};
 	
 	struct Chunk { // Chunks can get streamed into the file
-		u64		offs_to_next; // bytes to next Chunk struct, to allow linked list style traversal
+		u64		chunk_size;
 		u32		event_count;
 		u32		index;
 		u64		ts_begin;
@@ -57,28 +58,6 @@ namespace flamegraph_data_file {
 		// ... and so on
 	};
 	#endif
-	
-	DECL mlstr get_thread_name (u32 thread_i, File_Header cr header, Thread* threads, char* thr_str_tbl) {
-		assert(thread_i < header.thr_name_str_tbl_size);
-		assert(threads[thread_i].name_tbl_offs < header.thr_name_str_tbl_size);
-		return mlstr::count_cstr( thr_str_tbl +threads[thread_i].name_tbl_offs );
-	}
-	
-	DECL mlstr get_chunk_name (Chunk* chunk) {
-		return mlstr::count_cstr( (char*)(chunk +1) );
-	}
-	
-	DECL Event* get_chunk_events (mlstr chunk_name) {
-		return (Event*)(chunk_name.str +chunk_name.len +1);
-	}
-	
-	DECL mlstr get_event_name (Event* event) {
-		return mlstr::count_cstr( (char*)(event +1) );
-	}
-	
-	DECL Event* get_next_event (mlstr event_name) {
-		return (Event*)(event_name.str +event_name.len +1);
-	}
 	
 }
 #pragma pack (pop)

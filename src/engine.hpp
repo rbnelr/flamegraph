@@ -1609,12 +1609,15 @@ struct Str {
 	u32	len;
 };
 
+DECLD bool				streamed = true;
+
 DECLD u32				chunks_count;
-DECLD f::Chunk*			chunk;
 
 DECLD dynarr<Thread>	threads;
 DECLD dynarr<char>		blocks_str_storage;
 DECLD dynarr<Str>		blocks_strs;
+
+DECLD char*				threads_str_tbl;
 
 DECLD u32				gl_str_tbl_size = 0;
 
@@ -1668,8 +1671,6 @@ void at_init () {
 	stream.start();
 	stream.connect_to_client();
 	
-	bool streamed = true;
-	
 	{
 		f::File_Header f_header;
 		stream.read(&f_header, sizeof(f_header));
@@ -1700,14 +1701,16 @@ void at_init () {
 		
 		f::Thread*	f_threads = (f::Thread*)(remain_header);
 		
-		char*		f_thr_str_tbl = (char*)(f_threads +f_header.thread_count);
+		threads_str_tbl = (char*)malloc(f_header.thr_name_str_tbl_size);
+		cmemcpy(threads_str_tbl, f_threads +f_header.thread_count, f_header.thr_name_str_tbl_size);
 		
 		threads.init(THREADS_DYNARR_CAP);
 		
 		u32 threads_event_counter = 0;
 		
 		for (u32 i=0; i<f_header.thread_count; ++i) {
-			lstr name = f::get_thread_name(i, f_header, f_threads, f_thr_str_tbl);
+			assert(f_threads[i].name_tbl_offs < f_header.thr_name_str_tbl_size);
+			lstr name = mlstr::count_cstr( threads_str_tbl +f_threads[i].name_tbl_offs );
 			
 			#if 1
 			print("Thread % '%': sec_per_unit %	 units_per_sec %  event_count %\n",
@@ -1728,95 +1731,75 @@ void at_init () {
 		blocks_strs			.init(UNIQUE_BLOCKS_DYNARR_CAP);
 	}
 	
-	#if 0 // old code
-	Mem_Block	data;
-	assert(!platform::read_whole_file_onto(&working_stk, input_filename, 0, &data));
-	
-	assert(data.size >= sizeof(f::File_Header));
-	f::File_Header* f_header = (f::File_Header*)data.ptr;
-	
-	assert(f_header->id.i == f::FILE_ID.i);
-	assert(f_header->file_size == data.size);
-	
-	print("File_Header: file_size %	 total_event_count %  thread_count %  chunks_count %\n",
-				f_header->file_size,
-				f_header->total_event_count,
-				f_header->thread_count,
-				f_header->chunks_count );
-	
-	f::Thread*	f_threads = (f::Thread*)(f_header +1);
-	
-	char*		f_thr_str_tbl = (char*)(f_threads +f_header->thread_count);
-	
-	threads.init(THREADS_DYNARR_CAP);
-	
-	u32 threads_event_counter = 0;
-	
-	for (u32 i=0; i<f_header->thread_count; ++i) {
-		lstr name = f::get_thread_name(i, f_header, f_threads, f_thr_str_tbl);
-		
-		#if 0
-		print("Thread % '%': sec_per_unit %	 units_per_sec %  event_count %\n",
-				i, name,
-				f_threads[i].sec_per_unit, 1.0f / f_threads[i].sec_per_unit,
-				f_threads[i].event_count );
-		#endif
-		
-		threads_event_counter += f_threads[i].event_count;
-		
-		auto* thr = &threads.append();
-		thr->init(name, f_threads[i].sec_per_unit);
-	}
-	
-	assert(threads_event_counter == f_header->total_event_count);
-	
-	blocks_str_storage	.init(BLOCKS_STR_TABLE_CAP);
-	blocks_strs			.init(UNIQUE_BLOCKS_DYNARR_CAP);
-	
-	chunk = (f::Chunk*)(f_thr_str_tbl +f_header->thr_name_str_tbl_size);
-	
-	chunks_count = f_header->chunks_count;
-	#endif
-	
 }
 
-DECLD u32 chunk_i = 0;
+DECLD u32			chunk_i = 0;
+DECLD f::Chunk		chunk;
 
 void every_frame () {
 	
-	//stream_pipe.every_frame();
-	
-	#if 0
-	while (chunk_i < chunks_count && chunk_i < frame_number) {
+	if (streamed ? true : chunk_i < chunks_count) {
 		
-		mlstr chunk_name = f::get_chunk_name(chunk);
-		
-		auto* event = f::get_chunk_events(chunk_name);
-		
-		for (u32 i=0; i<chunk->event_count; ++i) {
-			mlstr code_name = f::get_event_name(event);
-			
-			assert(event->thread_indx < threads.len);
-			auto* thr = &threads[ event->thread_indx ];
-			
-			assert(code_name.str[0] != '\0');
-			
-			char action =				code_name.str[0];
-			lstr name =					lstr(&code_name.str[1], code_name.len -1);
-			
-			switch (action) {
-				case '{':	thr->open(name,		event->index, event->ts);		break;
-				case '}':	thr->close(name,	event->index, event->ts);		break;
-				case '|':	thr->step(name,		event->index, event->ts);		break;
-				default: assert(false, "action : '%'", action);
+		{
+			if (streamed) {
+				++chunks_count;
 			}
 			
-			event = f::get_next_event(code_name);
+			stream.read(&chunk, sizeof(chunk));
+			
+			DEFER_POP(&working_stk);
+			
+			assert(chunk.chunk_size > sizeof(chunk));
+			u64 size = chunk.chunk_size -sizeof(chunk);
+			
+			byte* data = working_stk.pushArr<byte>(size);
+			stream.read(data, size);
+			
+			mlstr chunk_name = mlstr::count_cstr( (char*)data );
+			
+			if (0) {
+				print(">>> '%' % size: % event_count: %\n",
+						chunk_name, chunk.index, chunk.chunk_size, chunk.event_count);
+			}
+			
+			auto* event = (f::Event*)(chunk_name.str +chunk_name.len +1);
+			
+			for (u32 i=0; i<chunk.event_count; ++i) {
+				mlstr code_name = mlstr::count_cstr( (char*)(event +1) );
+				
+				assert(event->thread_indx < threads.len);
+				auto* thr = &threads[ event->thread_indx ];
+				
+				assert(code_name.str[0] != '\0');
+				
+				char action =				code_name.str[0];
+				lstr name =					lstr(&code_name.str[1], code_name.len -1);
+				
+				//print(" %  % % %\n", i, code_name, event->index, event->ts);
+				
+				switch (action) {
+					case '{':	thr->open(name,		event->index, event->ts);		break;
+					case '}':	thr->close(name,	event->index, event->ts);		break;
+					case '|':	thr->step(name,		event->index, event->ts);		break;
+					default: assert(false, "action : '%'", action);
+				}
+				
+				event = (f::Event*)(code_name.str +code_name.len +1);
+			}
+			
+			++chunk_i;
 		}
 		
-		chunk = ptr_add(chunk, chunk->offs_to_next);
+		if (blocks_str_storage.len != gl_str_tbl_size) {
+			glBindBuffer(GL_TEXTURE_BUFFER, VBOs[VBO_BUF_TEX_BAR_NAME_STR_TBL]);
+			
+			glBufferData(GL_TEXTURE_BUFFER,
+					safe_cast_assert(GLsizeiptr, blocks_str_storage.len), blocks_str_storage.arr, GL_STREAM_DRAW);
+			print("String table size: %\n", blocks_str_storage.len);
+			
+			gl_str_tbl_size = blocks_str_storage.len;
+		}
 		
-		++chunk_i;
 	}
 	
 	if (blocks_str_storage.len != gl_str_tbl_size) {
@@ -1889,7 +1872,6 @@ void every_frame () {
 		}
 		
 	}
-	#endif
 	
 }
 

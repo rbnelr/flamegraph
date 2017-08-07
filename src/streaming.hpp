@@ -57,35 +57,41 @@ namespace streaming {
 		
 		void connect_to_client () {
 			
-			print(">>> waiting for client\n");
+			//print(">>> waiting for client\n");
 			
 			{
 				client_sock = accept(listen_sock, NULL, NULL);
 				assert(client_sock != INVALID_SOCKET);
 			}
 			
-			print(">>> client connected\n");
+			//print(">>> client connected\n");
 			
 		}
 		
 		void read (void* buf, u64 buf_size) {
+			char* cur = (byte*)buf;
+			char* end = cur +safe_cast_assert(int, buf_size);
 			
-			auto ret = recv(client_sock, (byte*)buf, safe_cast_assert(int, buf_size), 0);
-			if (ret > 0) {			// success
-				
-				print(">>> recieved % bytes\n", ret);
-				
-			} else if (ret == 0) {	// graceful connection close
-				
-			} else {				// failed
-				
-				auto err = WSAGetLastError();
-				if (err == WSAECONNRESET) {
-					assert(false, "hard connection close [WSAECONNRESET]");
-				} else {
-					assert(false, "recv failed: % [%]", ret, err);
+			while (cur != end) {
+				auto ret = recv(client_sock, cur, (int)ptr_sub(cur, end), 0);
+				if (ret > 0) {			// success
+					
+					//print(">>> recieved % bytes\n", ret);
+					cur += ret;
+					
+				} else if (ret == 0) {	// graceful connection close
+					
+				} else {				// failed
+					
+					auto err = WSAGetLastError();
+					if (err == WSAECONNRESET) {
+						assert(false, "hard connection close [WSAECONNRESET]");
+					} else {
+						assert(false, "recv failed: % [%]", ret, err);
+					}
 				}
 			}
+			
 		}
 		
 	};
@@ -112,7 +118,7 @@ namespace streaming {
 					assert(serv_sock != INVALID_SOCKET);
 				}
 				
-				print(">>> trying to connect to server\n");
+				//print(">>> trying to connect to server\n");
 				
 				{
 					auto ret = connect(serv_sock, result->ai_addr, result->ai_addrlen);

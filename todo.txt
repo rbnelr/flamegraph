@@ -107,22 +107,26 @@ https://www.youtube.com/watch?v=Rq3PYO0TrjE
  
  but could finally display correct data
  
-#2017.08.06 sa abend
+#2017.08.05 sa abend
  implemented data streaming (sort of)
  implemented data streaming using the chunks concept
+ 
+#2017.08.06 so abend-nacht
+ streaming over winsock2 instead of pipe is not harder to implement in any way, and is obviously preferred,
+  since a useful feature would be to have the profile monitor running on another machine
+ 
+ stream the data (somehow)
+ -> stream the chunks from the engine via sockets (and still into file)
+ -> recieve the chunks in the flamegraph app and stream them in the same way as currently
+ -> flamegraph app gets started first, sets up a tcp server and waits for a connection
+ -> engine sends the header with thread and thread clock freq information
+ -> then stream the data in chunks over the connection
+  -> currently with both apps being vsync'ed to 60fps this works perfectly, no stalls seem to happen
  
 TODO
 -FEATURES:
  
- stream the data (somehow)
- -stream the chunks from the engine via pipe (and still into file)
- -recieve the chunks in the flamegraph app and stream them in the same way as currently
- -flamegraph app gets started first, sets up a named pipe and waits for a connection
- -engine sends the header with thread and thread clock freq information
- -then stream the data in chunks over the pipe
-  -this probably needs to be in a asyncronous way to allow interactivity
- -since the graph even with 60k blocks seems to render in <2ms we probably want to disable vsync and render at a very fast rate,
-   so that the profiling data can be seen as low-latency and accurate as possible
+ test streaming between two machines
  
  stream the data and automaticly set the view position and size
  
