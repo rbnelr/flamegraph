@@ -18,7 +18,7 @@ template <typename T, typename LEN_T> DECLM void dynarr<T, LEN_T>:: init (LEN_T 
 }
 
 template <typename T, typename LEN_T> DECLM void dynarr<T, LEN_T>:: free () {
-	assert(this->arr != nullptr);
+	//assert(this->arr != nullptr); // Might be the correct to happen if we do realloc with size zero
 	
 	::free(this->arr);
 	#if DBG_INTERNAL
@@ -29,7 +29,7 @@ template <typename T, typename LEN_T> DECLM void dynarr<T, LEN_T>:: free () {
 template <typename T, typename LEN_T> DECLM void dynarr<T, LEN_T>:: _resize_cap (LEN_T new_cap) {
 	
 	if (new_cap != cap) {
-		assert(this->arr != nullptr);
+		//assert(this->arr != nullptr); // Might be the correct to happen if we do realloc with size zero
 		this->arr = (T*)realloc((void*)this->arr, new_cap*sizeof(T));
 		
 		#if DBG_MEMORY
@@ -65,6 +65,7 @@ DECL byte* _dyn_array_generic__index (dynarr<byte>* arr, u32 indx, uptr stride) 
 DECL void _dyn_array_generic__resize_cap (dynarr<byte>* arr, u32 new_cap, uptr stride) {
 	
 	if (new_cap != arr->cap) {
+		//assert(this->arr != nullptr); // Might be the correct to happen if we do realloc with size zero
 		arr->arr = (byte*)realloc((void*)arr->arr, new_cap*stride);
 		
 		#if DBG_MEMORY

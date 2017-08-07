@@ -1657,8 +1657,16 @@ DECLD constexpr tv3<GLubyte> COLS[8] = {
 	{128, 192,	77},
 };
 
+#include "streaming.hpp"
+
+//DECLD Read_Pipe			stream_pipe = {}; // init OVERLAPPED to zero
+
 void at_init () {
 	
+	winsock::init();
+	winsock::serv_test();
+	
+	#if 0
 	Mem_Block	data;
 	assert(!platform::read_whole_file_onto(&working_stk, input_filename, 0, &data));
 	
@@ -1706,6 +1714,7 @@ void at_init () {
 	chunk = (f::Chunk*)(f_thr_str_tbl +f_header->thr_name_str_tbl_size);
 	
 	chunks_count = f_header->chunks_count;
+	#endif
 	
 }
 
@@ -1713,6 +1722,9 @@ DECLD u32 chunk_i = 0;
 
 void every_frame () {
 	
+	//stream_pipe.every_frame();
+	
+	#if 0
 	while (chunk_i < chunks_count && chunk_i < frame_number) {
 		
 		mlstr chunk_name = f::get_chunk_name(chunk);
@@ -1815,6 +1827,7 @@ void every_frame () {
 		}
 		
 	}
+	#endif
 	
 }
 

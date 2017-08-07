@@ -26,6 +26,10 @@
 	WARNING_DISABLE(4005) // macro redefinition
 #endif
 
+#include <winsock2.h>
+#include <ws2tcpip.h>
+//#include <iphlpapi.h>
+
 #include "windows.h"
 
 #if _COMP == _COMP_MSVC

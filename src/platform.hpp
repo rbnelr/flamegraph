@@ -1891,11 +1891,14 @@ namespace platform {
 	DECL int msg_thread_main () {
 		
 		{
-			if (cmd_line.argc != 2) {
+			if (		cmd_line.argc == 1 ) {
+				input_filename = nullptr;
+			} else if (	cmd_line.argc == 2 ) {
+				input_filename = cmd_line.argv[1];
+			} else {
 				print("Usage: graph <filename>\n");
 				return 1;
 			}
-			input_filename = cmd_line.argv[1];
 		}
 		
 		time::process_begin();
