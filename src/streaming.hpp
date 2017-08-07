@@ -118,21 +118,33 @@ namespace streaming {
 				defer { freeaddrinfo(result); };
 				{
 					auto ret = getaddrinfo(server_ip, TO_STR(PROFILE_STREAMING_PORT), &hints, &result);
-					assert(ret == 0, "%", ret);
+					if (ret != 0) {
+						if (ret == WSAHOST_NOT_FOUND) {
+							warning("getaddrinfo for '%':'%' failed [WSAHOST_NOT_FOUND]",
+									server_ip, TO_STR(PROFILE_STREAMING_PORT));
+						} else {
+							assert(false, "getaddrinfo for '%':'%' failed [%]",
+									server_ip, TO_STR(PROFILE_STREAMING_PORT), ret);
+						}
+					}
 				}
 				
-				{
-					serv_sock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-					assert(serv_sock != INVALID_SOCKET);
-				}
+				serv_sock = INVALID_SOCKET;
 				
-				//print(">>> trying to connect to server\n");
-				
-				{
-					auto ret = connect(serv_sock, result->ai_addr, result->ai_addrlen);
-					if (ret == SOCKET_ERROR) {
-						warning("Cannot connect to server %:%", server_ip, TO_STR(PROFILE_STREAMING_PORT));
-						serv_sock = INVALID_SOCKET;
+				if (result) {
+					{
+						serv_sock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+						assert(serv_sock != INVALID_SOCKET);
+					}
+					
+					//print(">>> trying to connect to server\n");
+					
+					{
+						auto ret = connect(serv_sock, result->ai_addr, result->ai_addrlen);
+						if (ret == SOCKET_ERROR) {
+							warning("Cannot connect to server %:%", server_ip, TO_STR(PROFILE_STREAMING_PORT));
+							serv_sock = INVALID_SOCKET;
+						}
 					}
 				}
 				

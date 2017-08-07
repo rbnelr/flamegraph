@@ -1326,7 +1326,7 @@ DECLD constexpr	u32				BLOCKS_DYNARR_CAP =			_CAP(16 * 1024); // per thread
 DECLD constexpr	u32				UNIQUE_BLOCKS_DYNARR_CAP =	_CAP(256);
 DECLD constexpr	u32				BLOCKS_STR_TABLE_CAP =		_CAP(4096);
 
-DECLD constexpr u32				BLOCKS_PER_VBO =			4096;
+DECLD constexpr u32				BLOCKS_PER_VBO =			kibi(128);
 DECLD constexpr u32				GL_BUF_CAP =				_CAP(64);
 
 DECLD GLuint					VBOs[VBO_COUNT];
@@ -1733,10 +1733,14 @@ void at_init () {
 	
 }
 
-DECLD u32			chunk_i = 0;
-DECLD f::Chunk		chunk;
+DECLD u32				chunk_i = 0;
+DECLD f::Chunk			chunk;
+
+DECLD u64				bytes_recieved_this_frame;
 
 void every_frame () {
+	
+	bytes_recieved_this_frame = 0;
 	
 	if (streamed ? true : chunk_i < chunks_count) {
 		
@@ -1788,16 +1792,8 @@ void every_frame () {
 			}
 			
 			++chunk_i;
-		}
-		
-		if (blocks_str_storage.len != gl_str_tbl_size) {
-			glBindBuffer(GL_TEXTURE_BUFFER, VBOs[VBO_BUF_TEX_BAR_NAME_STR_TBL]);
 			
-			glBufferData(GL_TEXTURE_BUFFER,
-					safe_cast_assert(GLsizeiptr, blocks_str_storage.len), blocks_str_storage.arr, GL_STREAM_DRAW);
-			print("String table size: %\n", blocks_str_storage.len);
-			
-			gl_str_tbl_size = blocks_str_storage.len;
+			bytes_recieved_this_frame += chunk.chunk_size;
 		}
 		
 	}
@@ -1874,6 +1870,20 @@ void every_frame () {
 	}
 	
 }
+
+DECLD f64				dt_exp_moving_avg;
+DECLD constexpr f64		DT_EXP_MOVING_AVG_ALPHA =	1.0 / 8.0;
+
+DECLD f64				thrp_exp_moving_avg;
+DECLD constexpr f64		THRP_EXP_MOVING_AVG_ALPHA =	1.0 / 8.0;
+
+DECLD bool				dragging_view = false;
+DECLD f32				view_drag_grab_pos;
+DECLD f32				view_pos_sec_to_pix =		0.0f; // sec-space pos of left screen edge
+DECLD f32				view_scale_sec_to_pix =		1000.0f; // pixels per sec
+
+DECLD f32				select_pos =				0.0f; // sec
+DECLD f32				diff_select_pos =			0.0f; // sec
 
 void init () {
 	//THR_ENGINE->init_gl();
@@ -2006,17 +2016,6 @@ void init () {
 	
 	at_init();
 }
-
-f64						exp_moving_avg;
-constexpr f64			EXP_MOVING_AVG_ALPHA =	1.0 / 8.0;
-
-bool					dragging_view = false;
-f32						view_drag_grab_pos;
-f32						view_pos_sec_to_pix =		0.0f; // sec-space pos of left screen edge
-f32						view_scale_sec_to_pix =		1000.0f; // pixels per sec
-
-f32						select_pos =		0.0f; // sec
-f32						diff_select_pos =	0.0f; // sec
 
 GLint get_thread_bars_offs (u32 thread_i) {
 	return ((GLint)thread_i * (SHAD_BAR_OFFS * 8)) +SHAD_BAR_BASE_OFFS;
@@ -2297,14 +2296,29 @@ void frame () {
 	{ // Graph tool frame timings text draw
 		
 		if (frame_number == 1) {
-			exp_moving_avg = time::cpu_qpc_prev_frame_ms;
+			dt_exp_moving_avg = time::cpu_qpc_prev_frame_ms;
 		} else if (frame_number > 1) {
-			exp_moving_avg = (time::cpu_qpc_prev_frame_ms * EXP_MOVING_AVG_ALPHA)
-					+(exp_moving_avg * (1.0 -EXP_MOVING_AVG_ALPHA));
+			dt_exp_moving_avg = (time::cpu_qpc_prev_frame_ms * DT_EXP_MOVING_AVG_ALPHA)
+					+(dt_exp_moving_avg * (1.0 -DT_EXP_MOVING_AVG_ALPHA));
 		}
 		
-		lstr str = print_working_stk("frame#%, prev_dt: % ms  roll_avg: %",
-					frame_number, time::cpu_qpc_prev_frame_ms, exp_moving_avg);
+		if (frame_number == 0) {
+			thrp_exp_moving_avg = (f64)bytes_recieved_this_frame;
+		} else if (frame_number > 0) {
+			thrp_exp_moving_avg = ((f64)bytes_recieved_this_frame * THRP_EXP_MOVING_AVG_ALPHA)
+					+(thrp_exp_moving_avg * (1.0 -THRP_EXP_MOVING_AVG_ALPHA));
+		}
+		units::Throughput thrp(thrp_exp_moving_avg);
+		
+		u64 blocks = 0;
+		for (u32 i=0; i<threads.len; ++i) {
+			blocks += threads[i].buffered_count;
+		}
+		units::Bytes vbo_b(blocks * sizeof(std140_Bar));
+		
+		lstr str = print_working_stk("frame#%, prev_dt: %|% ms  %% |% total blocks: % VBO size: %%",
+					frame_number, dt_exp_moving_avg, time::cpu_qpc_prev_frame_ms,
+					thrp.val,thrp.unit, bytes_recieved_this_frame, blocks, vbo_b.val,vbo_b.unit);
 		
 		draw_text_line(upperleft_lines(0), str);
 	}

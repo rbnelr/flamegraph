@@ -127,6 +127,11 @@ TODO
 -FEATURES:
  
  test streaming between two machines
+ -> seems to introduce heavy stalls on both apps/machines
+ -try polling when data is availible in flamegraph (maybe with WSAPoll?) and keep reading chunks until no more are availible
+  -this should decouple the framerates of the apps and might solve the problem
+ -is the problem solved? if not, maybe doing the write in ogl_engine in a async way helps (what does that even mean when writing? since this is one way communication)
+ 
  
  stream the data and automaticly set the view position and size
  
