@@ -63,7 +63,7 @@ rem /main
 	set opt=!dbg! /fp:fast /Ob2 /GR- /Gv /EHa- /Gy /GS-
 	
 	rem /showIncludes
-	cl.exe -nologo /DNOTEBOOK=1 /D_PLATF=1 /D_ARCH=1 !opt! !warn! /I!fsrc!include !fsrc!!project!.cpp /Fe!froot!!project!.exe /link USER32.lib GDI32.lib OPENGL32.lib Ws2_32.lib /INCREMENTAL:NO /SUBSYSTEM:CONSOLE /OPT:REF
+	cl.exe -nologo /DNOTEBOOK=1 /D_PLATF=1 /D_ARCH=1 !opt! !warn! /I!fsrc!include /I!froot!../include !fsrc!!project!.cpp /Fe!froot!!project!.exe /link USER32.lib GDI32.lib OPENGL32.lib Ws2_32.lib /INCREMENTAL:NO /SUBSYSTEM:CONSOLE /OPT:REF
 	rem cl.exe /showIncludes -nologo /D_PLATF=1 /D_ARCH=1 !opt! !warn! /I!fCproj!/include !fsrc!!project!.cpp  -P
 	
 	exit /b
