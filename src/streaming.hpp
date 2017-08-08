@@ -16,9 +16,26 @@ namespace winsock {
 	
 }
 namespace streaming {
+	struct IP_Addr {
+		u16		port;
+		union {
+			u8	raw[4];
+			u32	i;
+		} ip;
+		
+		void set (sockaddr const* addr) {
+			assert(addr->sa_family == AF_INET);
+			auto* a = (sockaddr_in*)addr;
+			
+			port = ntohs(a->sin_port);
+			ip.i = ntohl(a->sin_addr.S_un.S_addr);
+		}
+	};
+	
 	struct Server {
-		SOCKET listen_sock;
-		SOCKET client_sock;
+		SOCKET	listen_sock;
+		SOCKET	client_sock;
+		IP_Addr	client_ip;
 		
 		void start () {
 			{
@@ -30,6 +47,8 @@ namespace streaming {
 				
 				addrinfo* result;
 				defer { freeaddrinfo(result); };
+				
+				print("Server on port %\n", PROFILE_STREAMING_PORT);
 				
 				{
 					auto ret = getaddrinfo(NULL, TO_STR(PROFILE_STREAMING_PORT), &hints, &result);
@@ -63,7 +82,33 @@ namespace streaming {
 				assert(client_sock != INVALID_SOCKET);
 			}
 			
-			//print(">>> client connected\n");
+			{
+				sockaddr addr;
+				int addr_sz = sizeof(addr);
+				auto ret = getpeername(client_sock, &addr, &addr_sz);
+				assert(ret == 0 && addr_sz == (int)sizeof(addr));
+				
+				client_ip.set(&addr);
+			}
+			
+			{ // Set recieve buffer to large value for good measure
+				int size = mebi<int>(1);
+				{
+					int size_sz = sizeof(size);
+					auto ret = setsockopt(client_sock, SOL_SOCKET, SO_RCVBUF, (char*)&size, size_sz);
+					assert(ret == 0, "% [%]", ret, WSAGetLastError());
+				}
+				{
+					int size_sz = sizeof(size);
+					auto ret = getsockopt(client_sock, SOL_SOCKET, SO_RCVBUF, (char*)&size, &size_sz);
+					assert(ret == 0, "% [%]", ret, WSAGetLastError());
+				}
+				//print(">>> SO_RCVBUF: %\n", size);
+			}
+			
+			print(">>> Connected to client %.%.%.%:%\n",
+				client_ip.ip.raw[3], client_ip.ip.raw[2], client_ip.ip.raw[1], client_ip.ip.raw[0],
+				client_ip.port);
 			
 		}
 		
@@ -91,6 +136,44 @@ namespace streaming {
 				}
 			}
 			
+		}
+		
+		#if 0
+		auto pollerr =		POLLERR;
+		auto pollhup =		POLLHUP;
+		auto pollnval =		POLLNVAL;
+		auto pollpri =		POLLPRI;
+		auto pollrdband =	POLLRDBAND;
+		auto pollrdnorm =	POLLRDNORM;
+		auto pollwrnorm =	POLLWRNORM;
+		#endif
+		
+		bool poll_read_avail () {
+			
+			WSAPOLLFD fd = {};
+			fd.fd =		client_sock;
+			fd.events =	POLLRDNORM;
+			
+			auto ret = WSAPoll(&fd, 1, 0);
+			if (		ret == 0 ) {
+				
+				assert(fd.revents == 0);
+				return false;
+				
+			} else if (	ret == 1 ) {
+				
+				if (fd.revents == (POLLERR|POLLHUP)) {
+					assert(false, "WSAPoll: connection close [revents == POLLERR|POLLHUP]");
+					return false;
+				}
+				
+				assert(fd.revents == POLLRDNORM, "%", hex(ret));
+				return true;
+				
+			} else {
+				assert(false, "%", ret);
+				return false;
+			}
 		}
 		
 	};
@@ -142,12 +225,28 @@ namespace streaming {
 					{
 						auto ret = connect(serv_sock, result->ai_addr, result->ai_addrlen);
 						if (ret == SOCKET_ERROR) {
-							warning("Cannot connect to server %:%", server_ip, TO_STR(PROFILE_STREAMING_PORT));
+							warning("Cannot connect to server %:% [%]",
+									server_ip, TO_STR(PROFILE_STREAMING_PORT), WSAGetLastError());
 							serv_sock = INVALID_SOCKET;
 						}
 					}
 				}
 				
+			}
+			
+			{ // Set send buffer size to a large value to avoid stalls if the flamegraph app is not frequently enough (slow framerate)
+				int size = mebi<int>(1);
+				{
+					int size_sz = sizeof(size);
+					auto ret = setsockopt(serv_sock, SOL_SOCKET, SO_SNDBUF, (char*)&size, size_sz);
+					assert(ret == 0, "% [%]", ret, WSAGetLastError());
+				}
+				{
+					int size_sz = sizeof(size);
+					auto ret = getsockopt(serv_sock, SOL_SOCKET, SO_SNDBUF, (char*)&size, &size_sz);
+					assert(ret == 0, "% [%]", ret, WSAGetLastError());
+				}
+				//print(">>> SO_SNDBUF: %\n", size);
 			}
 			
 		}
@@ -157,7 +256,36 @@ namespace streaming {
 			
 			auto ret = send(serv_sock, (char*)data, safe_cast_assert(int, size), 0);
 			assert(ret != SOCKET_ERROR);
+			assert(ret == safe_cast_assert(int, size));
 			
+		}
+		
+		bool poll_write_avail () {
+			
+			WSAPOLLFD fd = {};
+			fd.fd =		serv_sock;
+			fd.events =	POLLWRNORM;
+			
+			auto ret = WSAPoll(&fd, 1, 0);
+			if (		ret == 0 ) {
+				
+				assert(fd.revents == 0);
+				return false;
+				
+			} else if (	ret == 1 ) {
+				
+				if (fd.revents == (POLLERR|POLLHUP)) {
+					assert(false, "WSAPoll: connection close [revents == POLLERR|POLLHUP]");
+					return false;
+				}
+				
+				assert(fd.revents == POLLWRNORM, "%", hex(ret));
+				return true;
+				
+			} else {
+				assert(false, "%", ret);
+				return false;
+			}
 		}
 		
 	};

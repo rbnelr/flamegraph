@@ -123,15 +123,25 @@ https://www.youtube.com/watch?v=Rq3PYO0TrjE
  -> then stream the data in chunks over the connection
   -> currently with both apps being vsync'ed to 60fps this works perfectly, no stalls seem to happen
  
-TODO
--FEATURES:
- 
+#2017.08.07 mo nacht
  test streaming between two machines
  -> seems to introduce heavy stalls on both apps/machines
  -try polling when data is availible in flamegraph (maybe with WSAPoll?) and keep reading chunks until no more are availible
   -this should decouple the framerates of the apps and might solve the problem
+ -> worked perfectly, WSAPoll tells us when data to recieve is availible
  -is the problem solved? if not, maybe doing the write in ogl_engine in a async way helps (what does that even mean when writing? since this is one way communication)
+ -> ogl_engine, still blocks if flamegraph does not read data within one normal 60fps frame, which causes our second send() to block
+ -> doing WSAPoll here to allows us to drop chunks if we want to, to ensure minimal (if at all) stalling
+ -> but the actual problem turned out to be the send buffer size which was 8k (which is smaller than one chunk currently)
+     simply increasing the sendbuffer size to 1MB solved all problems in sending
+	 flamegraph can run at 1fps and ogl_engine wont stall since the buffer is bug enough
+	 (assuming flamegraph can still process the data fast enough)
  
+TODO
+-FEATURES:
+ 
+ handle disconnecting of either side
+ and reconnecting
  
  stream the data and automaticly set the view position and size
  

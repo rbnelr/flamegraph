@@ -1737,64 +1737,67 @@ DECLD u32				chunk_i = 0;
 DECLD f::Chunk			chunk;
 
 DECLD u64				bytes_recieved_this_frame;
+DECLD u32				chunks_this_frame;
+DECLD u32				STREAM_MAX_CHUNKS_PER_FRAME =		32;
 
 void every_frame () {
 	
 	bytes_recieved_this_frame = 0;
 	
-	if (streamed ? true : chunk_i < chunks_count) {
+	for (chunks_this_frame=0;; ++chunks_this_frame) {
 		
-		{
-			if (streamed) {
-				++chunks_count;
-			}
-			
-			stream.read(&chunk, sizeof(chunk));
-			
-			DEFER_POP(&working_stk);
-			
-			assert(chunk.chunk_size > sizeof(chunk));
-			u64 size = chunk.chunk_size -sizeof(chunk);
-			
-			byte* data = working_stk.pushArr<byte>(size);
-			stream.read(data, size);
-			
-			mlstr chunk_name = mlstr::count_cstr( (char*)data );
-			
-			if (0) {
-				print(">>> '%' % size: % event_count: %\n",
-						chunk_name, chunk.index, chunk.chunk_size, chunk.event_count);
-			}
-			
-			auto* event = (f::Event*)(chunk_name.str +chunk_name.len +1);
-			
-			for (u32 i=0; i<chunk.event_count; ++i) {
-				mlstr code_name = mlstr::count_cstr( (char*)(event +1) );
-				
-				assert(event->thread_indx < threads.len);
-				auto* thr = &threads[ event->thread_indx ];
-				
-				assert(code_name.str[0] != '\0');
-				
-				char action =				code_name.str[0];
-				lstr name =					lstr(&code_name.str[1], code_name.len -1);
-				
-				//print(" %  % % %\n", i, code_name, event->index, event->ts);
-				
-				switch (action) {
-					case '{':	thr->open(name,		event->index, event->ts);		break;
-					case '}':	thr->close(name,	event->index, event->ts);		break;
-					case '|':	thr->step(name,		event->index, event->ts);		break;
-					default: assert(false, "action : '%'", action);
-				}
-				
-				event = (f::Event*)(code_name.str +code_name.len +1);
-			}
-			
-			++chunk_i;
-			
-			bytes_recieved_this_frame += chunk.chunk_size;
+		if (streamed) {
+			if ( !stream.poll_read_avail() || chunks_this_frame == STREAM_MAX_CHUNKS_PER_FRAME ) break;
+			++chunks_count;
+		} else {
+			if (chunk_i == chunks_count) break;
 		}
+		
+		stream.read(&chunk, sizeof(chunk));
+		
+		DEFER_POP(&working_stk);
+		
+		assert(chunk.chunk_size > sizeof(chunk));
+		u64 size = chunk.chunk_size -sizeof(chunk);
+		
+		byte* data = working_stk.pushArr<byte>(size);
+		stream.read(data, size);
+		
+		mlstr chunk_name = mlstr::count_cstr( (char*)data );
+		
+		if (0) {
+			print(">>> '%' % size: % event_count: %\n",
+					chunk_name, chunk.index, chunk.chunk_size, chunk.event_count);
+		}
+		
+		auto* event = (f::Event*)(chunk_name.str +chunk_name.len +1);
+		
+		for (u32 i=0; i<chunk.event_count; ++i) {
+			mlstr code_name = mlstr::count_cstr( (char*)(event +1) );
+			
+			assert(event->thread_indx < threads.len);
+			auto* thr = &threads[ event->thread_indx ];
+			
+			assert(code_name.str[0] != '\0');
+			
+			char action =				code_name.str[0];
+			lstr name =					lstr(&code_name.str[1], code_name.len -1);
+			
+			//print(" %  % % %\n", i, code_name, event->index, event->ts);
+			
+			switch (action) {
+				case '{':	thr->open(name,		event->index, event->ts);		break;
+				case '}':	thr->close(name,	event->index, event->ts);		break;
+				case '|':	thr->step(name,		event->index, event->ts);		break;
+				default: assert(false, "action : '%'", action);
+			}
+			
+			event = (f::Event*)(code_name.str +code_name.len +1);
+		}
+		
+		++chunk_i;
+		
+		bytes_recieved_this_frame += chunk.chunk_size;
 		
 	}
 	
@@ -2065,6 +2068,10 @@ void frame () {
 	
 	every_frame();
 	
+	if (0) { // Artificially slow down to test stuff
+		Sleep(333);
+	}
+	
 	{ // Input query
 		input::query(&inp, &sinp);
 	}
@@ -2316,9 +2323,11 @@ void frame () {
 		}
 		units::Bytes vbo_b(blocks * sizeof(std140_Bar));
 		
-		lstr str = print_working_stk("frame#%, prev_dt: %|% ms  %% |% total blocks: % VBO size: %%",
+		lstr str = print_working_stk("frame#%, prev_dt: %|% ms  %% |% chunks: % total blocks: % VBO size: %%",
 					frame_number, dt_exp_moving_avg, time::cpu_qpc_prev_frame_ms,
-					thrp.val,thrp.unit, bytes_recieved_this_frame, blocks, vbo_b.val,vbo_b.unit);
+					thrp.val,thrp.unit, bytes_recieved_this_frame, chunks_this_frame, blocks, vbo_b.val,vbo_b.unit);
+		
+		//print(">>> %\n", str);
 		
 		draw_text_line(upperleft_lines(0), str);
 	}

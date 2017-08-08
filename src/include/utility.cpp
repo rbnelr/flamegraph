@@ -454,7 +454,8 @@ namespace list_of_files_in_n {
 				
 				search_handle = FindFirstFileA(search_path.str, &info);
 				if (search_handle == INVALID_HANDLE_VALUE) {
-					warning("directory_folder_list:: FindFirstFileA() failed, for path of '%'!", path);
+					warning("directory_folder_list:: FindFirstFileA() failed, for path of '%'!", search_path);
+					return;
 				}
 			}
 			
