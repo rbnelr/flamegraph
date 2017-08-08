@@ -4,18 +4,20 @@ namespace winsock {
 	DECLD WSADATA	wsa;
 	
 	void init () {
-		
-		{
-			auto ret = WSAStartup(MAKEWORD(2,2), &wsa);
-			assert(ret == 0);
-		}
-		
+		auto ret = WSAStartup(MAKEWORD(2,2), &wsa);
+		assert(ret == 0);
+	}
+	
+	void cleanup () {
+		auto ret = WSACleanup();
+		if (ret != 0) warning("WSACleanup() failed, % [%]", ret, WSAGetLastError());
 	}
 	
 	#define PROFILE_STREAMING_PORT	27015
 	
 }
 namespace streaming {
+	
 	struct IP_Addr {
 		u16		port;
 		union {
@@ -30,6 +32,9 @@ namespace streaming {
 			port = ntohs(a->sin_port);
 			ip.i = ntohl(a->sin_addr.S_un.S_addr);
 		}
+		
+		// for use with '%.%.%.%:%'
+		#define _IP_PRINT(a) (a).ip.raw[3], (a).ip.raw[2], (a).ip.raw[1], (a).ip.raw[0], (a).port
 	};
 	
 	struct Server {
@@ -37,7 +42,11 @@ namespace streaming {
 		SOCKET	client_sock;
 		IP_Addr	client_ip;
 		
+		bool	connected;
+		
 		void start () {
+			connected = false;
+			
 			{
 				addrinfo hints = {}; // zero
 				hints.ai_family =	AF_INET;
@@ -69,6 +78,31 @@ namespace streaming {
 			{
 				auto ret = listen(listen_sock, SOMAXCONN);
 				assert(ret != SOCKET_ERROR);
+			}
+			
+		}
+		
+		bool client_pending () {
+			
+			WSAPOLLFD fd = {};
+			fd.fd =		listen_sock;
+			fd.events =	POLLRDNORM;
+			
+			auto ret = WSAPoll(&fd, 1, 0);
+			if (		ret == 0 ) {
+				
+				assert(fd.revents == 0);
+				return false;
+				
+			} else if (	ret == 1 ) {
+				
+				assert(fd.revents == POLLRDNORM, "%", hex(fd.revents));
+				return true;
+				
+			} else {
+				assert(false, "%", ret);
+				connected = false;
+				return false;
 			}
 			
 		}
@@ -106,9 +140,8 @@ namespace streaming {
 				//print(">>> SO_RCVBUF: %\n", size);
 			}
 			
-			print(">>> Connected to client %.%.%.%:%\n",
-				client_ip.ip.raw[3], client_ip.ip.raw[2], client_ip.ip.raw[1], client_ip.ip.raw[0],
-				client_ip.port);
+			connected = true;
+			print(">>> Connected to client %.%.%.%:%.\n", _IP_PRINT(client_ip));
 			
 		}
 		
@@ -139,13 +172,13 @@ namespace streaming {
 		}
 		
 		#if 0
-		auto pollerr =		POLLERR;
-		auto pollhup =		POLLHUP;
-		auto pollnval =		POLLNVAL;
-		auto pollpri =		POLLPRI;
-		auto pollrdband =	POLLRDBAND;
-		auto pollrdnorm =	POLLRDNORM;
-		auto pollwrnorm =	POLLWRNORM;
+		int pollerr =		POLLERR;
+		int pollhup =		POLLHUP;
+		int pollnval =		POLLNVAL;
+		int pollpri =		POLLPRI;
+		int pollrdband =	POLLRDBAND;
+		int pollrdnorm =	POLLRDNORM;
+		int pollwrnorm =	POLLWRNORM;
 		#endif
 		
 		bool poll_read_avail () {
@@ -162,16 +195,19 @@ namespace streaming {
 				
 			} else if (	ret == 1 ) {
 				
-				if (fd.revents == (POLLERR|POLLHUP)) {
-					assert(false, "WSAPoll: connection close [revents == POLLERR|POLLHUP]");
+				if (fd.revents == POLLHUP) {
+					print(">>> Client %.%.%.%:% disconnected gracefully.\n", _IP_PRINT(client_ip));
+					//assert(false, "WSAPoll: connection close [revents == POLLERR|POLLHUP]");
+					connected = false;
 					return false;
 				}
 				
-				assert(fd.revents == POLLRDNORM, "%", hex(ret));
+				assert(fd.revents & POLLRDNORM, "%", hex(fd.revents));
 				return true;
 				
 			} else {
 				assert(false, "%", ret);
+				connected = false;
 				return false;
 			}
 		}
@@ -248,6 +284,16 @@ namespace streaming {
 				}
 				//print(">>> SO_SNDBUF: %\n", size);
 			}
+			
+			print("Connected to server %:%.\n", server_ip, TO_STR(PROFILE_STREAMING_PORT));
+		}
+		
+		void disconnect_from_server () {
+			
+			auto ret = closesocket(serv_sock);
+			if (ret != 0) warning("closesocket() failed % [%]", ret, WSAGetLastError());
+			
+			print("Disconnected from server.\n");
 			
 		}
 		

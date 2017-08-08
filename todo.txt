@@ -142,6 +142,10 @@ TODO
  
  handle disconnecting of either side
  and reconnecting
+ -> graceful disconnect detected by POLLHUP in WSAPoll when polling for read
+ -handle unconnected at start - poll for pending connection
+ -handle dead connection by timeouting ourself (or maybe don't do timeouts, but instead simply reconnect when a new connection is detected to be pending)
+ -handle reconnecting with new client (ogl_engine restarted is a new client) (old data has to be freed)
  
  stream the data and automaticly set the view position and size
  

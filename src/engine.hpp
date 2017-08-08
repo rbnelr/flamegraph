@@ -1426,6 +1426,11 @@ struct Gl_Buf {
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 	
+	void free () {
+		glDeleteBuffers(1, &VBO);
+		glDeleteVertexArrays(1, &VAO);
+	}
+	
 };
 
 struct Thread {
@@ -1664,73 +1669,77 @@ DECLD constexpr tv3<GLubyte> COLS[8] = {
 
 DECLD streaming::Server		stream;
 
+void stream_connect () {
+	
+	f::File_Header f_header;
+	stream.read(&f_header, sizeof(f_header));
+	
+	assert(f_header.id.i == f::FILE_ID.i);
+	
+	u64 remain_header_size = (f_header.thread_count * sizeof(f::Thread)) +f_header.thr_name_str_tbl_size;
+	
+	assert((remain_header_size +sizeof(f_header)) <= f_header.file_size);
+	
+	DEFER_POP(&working_stk);
+	byte* remain_header = working_stk.pushArr<byte>(remain_header_size);
+	
+	stream.read(remain_header, remain_header_size);
+	
+	if (streamed) {
+		assert(f_header.total_event_count == 0);
+		assert(f_header.chunks_count == 0);
+	}
+	
+	print("File_Header: file_size %	 total_event_count %  thread_count %  chunks_count %\n",
+				f_header.file_size,
+				f_header.total_event_count,
+				f_header.thread_count,
+				f_header.chunks_count );
+	
+	chunks_count = f_header.chunks_count;
+	
+	f::Thread*	f_threads = (f::Thread*)(remain_header);
+	
+	threads_str_tbl = (char*)malloc(f_header.thr_name_str_tbl_size);
+	cmemcpy(threads_str_tbl, f_threads +f_header.thread_count, f_header.thr_name_str_tbl_size);
+	
+	threads.init(THREADS_DYNARR_CAP);
+	
+	u32 threads_event_counter = 0;
+	
+	for (u32 i=0; i<f_header.thread_count; ++i) {
+		assert(f_threads[i].name_tbl_offs < f_header.thr_name_str_tbl_size);
+		lstr name = mlstr::count_cstr( threads_str_tbl +f_threads[i].name_tbl_offs );
+		
+		#if 1
+		print("Thread % '%': sec_per_unit %	 units_per_sec %  event_count %\n",
+				i, name,
+				f_threads[i].sec_per_unit, 1.0f / f_threads[i].sec_per_unit,
+				f_threads[i].event_count );
+		#endif
+		
+		threads_event_counter += f_threads[i].event_count;
+		
+		auto* thr = &threads.append();
+		thr->init(name, f_threads[i].sec_per_unit);
+	}
+	
+	assert(threads_event_counter == f_header.total_event_count);
+	
+	blocks_str_storage	.init(BLOCKS_STR_TABLE_CAP);
+	blocks_strs			.init(UNIQUE_BLOCKS_DYNARR_CAP);
+	
+}
+
+void stream_disconnect () {
+	
+}
+
 void at_init () {
 	
 	winsock::init();
 	
 	stream.start();
-	stream.connect_to_client();
-	
-	{
-		f::File_Header f_header;
-		stream.read(&f_header, sizeof(f_header));
-		
-		assert(f_header.id.i == f::FILE_ID.i);
-		
-		u64 remain_header_size = (f_header.thread_count * sizeof(f::Thread)) +f_header.thr_name_str_tbl_size;
-		
-		assert((remain_header_size +sizeof(f_header)) <= f_header.file_size);
-		
-		DEFER_POP(&working_stk);
-		byte* remain_header = working_stk.pushArr<byte>(remain_header_size);
-		
-		stream.read(remain_header, remain_header_size);
-		
-		if (streamed) {
-			assert(f_header.total_event_count == 0);
-			assert(f_header.chunks_count == 0);
-		}
-		
-		print("File_Header: file_size %	 total_event_count %  thread_count %  chunks_count %\n",
-					f_header.file_size,
-					f_header.total_event_count,
-					f_header.thread_count,
-					f_header.chunks_count );
-		
-		chunks_count = f_header.chunks_count;
-		
-		f::Thread*	f_threads = (f::Thread*)(remain_header);
-		
-		threads_str_tbl = (char*)malloc(f_header.thr_name_str_tbl_size);
-		cmemcpy(threads_str_tbl, f_threads +f_header.thread_count, f_header.thr_name_str_tbl_size);
-		
-		threads.init(THREADS_DYNARR_CAP);
-		
-		u32 threads_event_counter = 0;
-		
-		for (u32 i=0; i<f_header.thread_count; ++i) {
-			assert(f_threads[i].name_tbl_offs < f_header.thr_name_str_tbl_size);
-			lstr name = mlstr::count_cstr( threads_str_tbl +f_threads[i].name_tbl_offs );
-			
-			#if 1
-			print("Thread % '%': sec_per_unit %	 units_per_sec %  event_count %\n",
-					i, name,
-					f_threads[i].sec_per_unit, 1.0f / f_threads[i].sec_per_unit,
-					f_threads[i].event_count );
-			#endif
-			
-			threads_event_counter += f_threads[i].event_count;
-			
-			auto* thr = &threads.append();
-			thr->init(name, f_threads[i].sec_per_unit);
-		}
-		
-		assert(threads_event_counter == f_header.total_event_count);
-		
-		blocks_str_storage	.init(BLOCKS_STR_TABLE_CAP);
-		blocks_strs			.init(UNIQUE_BLOCKS_DYNARR_CAP);
-	}
-	
 }
 
 DECLD u32				chunk_i = 0;
@@ -1743,11 +1752,24 @@ DECLD u32				STREAM_MAX_CHUNKS_PER_FRAME =		32;
 void every_frame () {
 	
 	bytes_recieved_this_frame = 0;
+	if (!stream.connected) {
+		if (!stream.client_pending()) {
+			return;
+		}
+		
+		stream.connect_to_client();
+	}
 	
 	for (chunks_this_frame=0;; ++chunks_this_frame) {
 		
 		if (streamed) {
-			if ( !stream.poll_read_avail() || chunks_this_frame == STREAM_MAX_CHUNKS_PER_FRAME ) break;
+			bool avail = stream.poll_read_avail();
+			if (!stream.connected) {
+				stream_disconnect();
+				return;
+			}
+			
+			if ( !avail || chunks_this_frame == STREAM_MAX_CHUNKS_PER_FRAME ) break;
 			++chunks_count;
 		} else {
 			if (chunk_i == chunks_count) break;
@@ -1758,6 +1780,7 @@ void every_frame () {
 		DEFER_POP(&working_stk);
 		
 		assert(chunk.chunk_size > sizeof(chunk));
+		assert(chunk.chunk_size <= gibi<u64>(1), "%", chunk.chunk_size);
 		u64 size = chunk.chunk_size -sizeof(chunk);
 		
 		byte* data = working_stk.pushArr<byte>(size);
