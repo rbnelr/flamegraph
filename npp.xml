@@ -1,47 +1,15 @@
 <NotepadPlus>
-    <Session activeView="0">
-        <mainView activeIndex="1">
-            <File firstVisibleLine="0" xOffset="0" scrollWidth="1463" startPos="0" endPos="0" selMode="0" lang="Batch" encoding="-1" filename="D:\Cproj\flamegraph\build.bat" backupFilePath="" originalFileLastModifTimestamp="1501897431" />
-            <File firstVisibleLine="68" xOffset="0" scrollWidth="1106" startPos="3206" endPos="3206" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\todo.txt" backupFilePath="" originalFileLastModifTimestamp="1501977330" />
-            <File firstVisibleLine="0" xOffset="0" scrollWidth="1" startPos="0" endPos="0" selMode="0" lang="Normal Text" encoding="-1" filename="D:\Cproj\flamegraph\notes.txt" backupFilePath="" originalFileLastModifTimestamp="1501444567" />
-            <File firstVisibleLine="0" xOffset="0" scrollWidth="1026" startPos="1323" endPos="1323" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\src\global_includes.h" backupFilePath="" originalFileLastModifTimestamp="1501477224" />
-            <File firstVisibleLine="0" xOffset="0" scrollWidth="938" startPos="1069" endPos="1069" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\src\flamegraph_data_file.h" backupFilePath="" originalFileLastModifTimestamp="1501598980" />
+    <Session activeView="1">
+        <mainView activeIndex="3">
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="1463" startPos="0" endPos="0" selMode="0" lang="Batch" encoding="-1" filename="D:\Cproj\flamegraph\build.bat" backupFilePath="" originalFileLastModifTimestamp="1502163424" mapFirstVisibleDisplayLine="-1" mapFirstVisibleDocLine="-1" mapLastVisibleDocLine="-1" mapNbLine="-1" mapHigherPos="-1" mapWidth="-1" mapHeight="-1" mapKByteInDoc="147" mapWrapIndentMode="-1" mapIsWrap="no" />
+            <File firstVisibleLine="68" xOffset="0" scrollWidth="1162" startPos="4548" endPos="4548" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\todo.txt" backupFilePath="" originalFileLastModifTimestamp="1502163141" mapFirstVisibleDisplayLine="-1" mapFirstVisibleDocLine="-1" mapLastVisibleDocLine="-1" mapNbLine="-1" mapHigherPos="-1" mapWidth="-1" mapHeight="-1" mapKByteInDoc="512" mapWrapIndentMode="-1" mapIsWrap="no" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="1" startPos="0" endPos="0" selMode="0" lang="Normal Text" encoding="-1" filename="D:\Cproj\flamegraph\notes.txt" backupFilePath="" originalFileLastModifTimestamp="1501444567" mapFirstVisibleDisplayLine="-1" mapFirstVisibleDocLine="-1" mapLastVisibleDocLine="-1" mapNbLine="-1" mapHigherPos="-1" mapWidth="-1" mapHeight="-1" mapKByteInDoc="512" mapWrapIndentMode="-1" mapIsWrap="no" />
+            <File firstVisibleLine="52" xOffset="0" scrollWidth="938" startPos="1856" endPos="1856" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\src\streaming.hpp" backupFilePath="" originalFileLastModifTimestamp="1502419125" mapFirstVisibleDisplayLine="-1" mapFirstVisibleDocLine="-1" mapLastVisibleDocLine="-1" mapNbLine="-1" mapHigherPos="-1" mapWidth="-1" mapHeight="-1" mapKByteInDoc="0" mapWrapIndentMode="-1" mapIsWrap="no" />
         </mainView>
         <subView activeIndex="2">
-            <File firstVisibleLine="0" xOffset="0" scrollWidth="910" startPos="0" endPos="0" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\src\graph.cpp" backupFilePath="" originalFileLastModifTimestamp="1501444567" />
-            <File firstVisibleLine="220" xOffset="0" scrollWidth="1197" startPos="28382" endPos="28382" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\src\platform.h" backupFilePath="" originalFileLastModifTimestamp="1501975497">
-                <Fold line="17" />
-                <Fold line="47" />
-                <Fold line="81" />
-                <Fold line="115" />
-                <Fold line="160" />
-                <Fold line="164" />
-                <Fold line="169" />
-                <Fold line="175" />
-                <Fold line="179" />
-                <Fold line="243" />
-                <Fold line="303" />
-                <Fold line="310" />
-                <Fold line="578" />
-                <Fold line="608" />
-                <Fold line="632" />
-                <Fold line="662" />
-                <Fold line="670" />
-                <Fold line="674" />
-                <Fold line="926" />
-                <Fold line="983" />
-                <Fold line="991" />
-                <Fold line="1007" />
-                <Fold line="1021" />
-                <Fold line="1104" />
-                <Fold line="1110" />
-                <Fold line="1175" />
-                <Fold line="1184" />
-                <Fold line="1211" />
-                <Fold line="1751" />
-                <Fold line="1890" />
-            </File>
-            <File firstVisibleLine="1781" xOffset="0" scrollWidth="952" startPos="47864" endPos="47864" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\src\engine.h" backupFilePath="" originalFileLastModifTimestamp="1501976678">
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="910" startPos="0" endPos="0" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\src\graph.cpp" backupFilePath="" originalFileLastModifTimestamp="1502049976" mapFirstVisibleDisplayLine="-1" mapFirstVisibleDocLine="-1" mapLastVisibleDocLine="-1" mapNbLine="-1" mapHigherPos="-1" mapWidth="-1" mapHeight="-1" mapKByteInDoc="512" mapWrapIndentMode="-1" mapIsWrap="no" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="777" startPos="0" endPos="0" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\src\platform.hpp" backupFilePath="" originalFileLastModifTimestamp="1502078251" mapFirstVisibleDisplayLine="-1" mapFirstVisibleDocLine="-1" mapLastVisibleDocLine="-1" mapNbLine="-1" mapHigherPos="-1" mapWidth="-1" mapHeight="-1" mapKByteInDoc="1397903696" mapWrapIndentMode="-1" mapIsWrap="no" />
+            <File firstVisibleLine="1384" xOffset="0" scrollWidth="917" startPos="45665" endPos="45665" selMode="0" lang="C++" encoding="-1" filename="D:\Cproj\flamegraph\src\engine.hpp" backupFilePath="" originalFileLastModifTimestamp="1502419131" mapFirstVisibleDisplayLine="-1" mapFirstVisibleDocLine="-1" mapLastVisibleDocLine="-1" mapNbLine="-1" mapHigherPos="-1" mapWidth="-1" mapHeight="-1" mapKByteInDoc="7864439" mapWrapIndentMode="-1" mapIsWrap="no">
                 <Fold line="3" />
                 <Fold line="24" />
                 <Fold line="27" />
@@ -86,68 +54,31 @@
                 <Fold line="330" />
                 <Fold line="336" />
                 <Fold line="340" />
+                <Fold line="358" />
                 <Fold line="411" />
-                <Fold line="418" />
-                <Fold line="514" />
-                <Fold line="540" />
-                <Fold line="553" />
-                <Fold line="564" />
-                <Fold line="576" />
-                <Fold line="621" />
-                <Fold line="632" />
-                <Fold line="681" />
-                <Fold line="712" />
-                <Fold line="801" />
-                <Fold line="831" />
-                <Fold line="851" />
+                <Fold line="416" />
                 <Fold line="887" />
                 <Fold line="901" />
                 <Fold line="905" />
                 <Fold line="915" />
-                <Fold line="920" />
-                <Fold line="928" />
-                <Fold line="935" />
-                <Fold line="946" />
                 <Fold line="999" />
-                <Fold line="1007" />
-                <Fold line="1020" />
-                <Fold line="1085" />
-                <Fold line="1093" />
                 <Fold line="1107" />
-                <Fold line="1111" />
-                <Fold line="1115" />
-                <Fold line="1119" />
-                <Fold line="1131" />
-                <Fold line="1143" />
-                <Fold line="1152" />
                 <Fold line="1157" />
-                <Fold line="1158" />
-                <Fold line="1163" />
-                <Fold line="1170" />
+                <Fold line="1315" />
+                <Fold line="1342" />
                 <Fold line="1358" />
-                <Fold line="1388" />
-                <Fold line="1444" />
-                <Fold line="1459" />
-                <Fold line="1503" />
-                <Fold line="1533" />
-                <Fold line="1579" />
-                <Fold line="1593" />
-                <Fold line="1620" />
-                <Fold line="1644" />
-                <Fold line="1648" />
-                <Fold line="1823" />
-                <Fold line="1845" />
-                <Fold line="1854" />
-                <Fold line="1864" />
-                <Fold line="1868" />
-                <Fold line="1876" />
-                <Fold line="1963" />
-                <Fold line="1967" />
-                <Fold line="2011" />
-                <Fold line="2015" />
-                <Fold line="2033" />
-                <Fold line="2081" />
-                <Fold line="2145" />
+                <Fold line="1384" />
+                <Fold line="1435" />
+                <Fold line="1611" />
+                <Fold line="1628" />
+                <Fold line="1652" />
+                <Fold line="1656" />
+                <Fold line="1671" />
+                <Fold line="1733" />
+                <Fold line="1913" />
+                <Fold line="2045" />
+                <Fold line="2049" />
+                <Fold line="2089" />
             </File>
         </subView>
     </Session>

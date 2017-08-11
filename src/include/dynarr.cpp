@@ -1,5 +1,5 @@
 
-template <typename T, typename LEN_T> DECLM void dynarr<T, LEN_T>:: init (LEN_T init_len, LEN_T init_cap) {
+template <typename T, typename LEN_T> DECLM void dynarr<T, LEN_T>:: alloc (LEN_T init_len, LEN_T init_cap) {
 	
 	this->len = init_len;
 	assert(init_cap >= init_len);
@@ -13,8 +13,8 @@ template <typename T, typename LEN_T> DECLM void dynarr<T, LEN_T>:: init (LEN_T 
 	cmemset(arr, DBG_MEM_UNALLOCATED_BYTE, cap*sizeof(T));
 	#endif
 }
-template <typename T, typename LEN_T> DECLM void dynarr<T, LEN_T>:: init (LEN_T init_cap) {
-	init(0, init_cap);
+template <typename T, typename LEN_T> DECLM void dynarr<T, LEN_T>:: alloc (LEN_T init_cap) {
+	alloc(0, init_cap);
 }
 
 template <typename T, typename LEN_T> DECLM void dynarr<T, LEN_T>:: free () {

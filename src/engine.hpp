@@ -1453,13 +1453,24 @@ struct Thread {
 		
 		name = name_;
 		
-		gl_bufs.init(GL_BUF_CAP);
+		gl_bufs.alloc(GL_BUF_CAP);
 		buffered_count = 0;
 		
-		blocks.init(BLOCKS_DYNARR_CAP);
-		prev_stk.init(LEVELS_DYNARR_CAP);
+		blocks.alloc(BLOCKS_DYNARR_CAP);
+		prev_stk.alloc(LEVELS_DYNARR_CAP);
 		
 		cur_level = -1;
+	}
+	
+	void free () {
+		
+		for (u32 i=0; i<gl_bufs.len; ++i) {
+			gl_bufs[i].free();
+		}
+		gl_bufs.free();
+		
+		blocks.free();
+		prev_stk.free();
 	}
 	
 	void open (lstr name, u32 index, u64 ts) {
@@ -1618,11 +1629,11 @@ DECLD bool				streamed = true;
 
 DECLD u32				chunks_count;
 
-DECLD dynarr<Thread>	threads;
-DECLD dynarr<char>		blocks_str_storage;
-DECLD dynarr<Str>		blocks_strs;
+DECLD dynarr<Thread>	threads; // zeroed
+DECLD dynarr<char>		blocks_str_storage; // zeroed
+DECLD dynarr<Str>		blocks_strs; // zeroed
 
-DECLD char*				threads_str_tbl;
+DECLD char*				threads_str_tbl = nullptr;
 
 DECLD u32				gl_str_tbl_size = 0;
 
@@ -1700,12 +1711,18 @@ void stream_connect () {
 	
 	f::Thread*	f_threads = (f::Thread*)(remain_header);
 	
+	free(threads_str_tbl);
 	threads_str_tbl = (char*)malloc(f_header.thr_name_str_tbl_size);
 	cmemcpy(threads_str_tbl, f_threads +f_header.thread_count, f_header.thr_name_str_tbl_size);
 	
-	threads.init(THREADS_DYNARR_CAP);
-	
 	u32 threads_event_counter = 0;
+	
+	if (threads.arr) {
+		for (u32 i=0; i<threads.len; ++i) {
+			threads[i].free();
+		}
+	}
+	threads.clear(0, THREADS_DYNARR_CAP);
 	
 	for (u32 i=0; i<f_header.thread_count; ++i) {
 		assert(f_threads[i].name_tbl_offs < f_header.thr_name_str_tbl_size);
@@ -1726,12 +1743,8 @@ void stream_connect () {
 	
 	assert(threads_event_counter == f_header.total_event_count);
 	
-	blocks_str_storage	.init(BLOCKS_STR_TABLE_CAP);
-	blocks_strs			.init(UNIQUE_BLOCKS_DYNARR_CAP);
-	
-}
-
-void stream_disconnect () {
+	blocks_str_storage.clear(0, THREADS_DYNARR_CAP);
+	blocks_strs.clear		(0, BLOCKS_STR_TABLE_CAP);
 	
 }
 
@@ -1752,22 +1765,20 @@ DECLD u32				STREAM_MAX_CHUNKS_PER_FRAME =		32;
 void every_frame () {
 	
 	bytes_recieved_this_frame = 0;
-	if (!stream.connected) {
-		if (!stream.client_pending()) {
+	
+	if (stream.client_pending()) {
+		stream.connect_to_client();
+		stream_connect();
+	} else {
+		if (!stream.connected) {
 			return;
 		}
-		
-		stream.connect_to_client();
 	}
 	
 	for (chunks_this_frame=0;; ++chunks_this_frame) {
 		
 		if (streamed) {
 			bool avail = stream.poll_read_avail();
-			if (!stream.connected) {
-				stream_disconnect();
-				return;
-			}
 			
 			if ( !avail || chunks_this_frame == STREAM_MAX_CHUNKS_PER_FRAME ) break;
 			++chunks_count;

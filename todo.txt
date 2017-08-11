@@ -137,15 +137,19 @@ https://www.youtube.com/watch?v=Rq3PYO0TrjE
 	 flamegraph can run at 1fps and ogl_engine wont stall since the buffer is bug enough
 	 (assuming flamegraph can still process the data fast enough)
  
-TODO
--FEATURES:
- 
+#2017.08.10 do-fr nacht
  handle disconnecting of either side
  and reconnecting
  -> graceful disconnect detected by POLLHUP in WSAPoll when polling for read
  -handle unconnected at start - poll for pending connection
  -handle dead connection by timeouting ourself (or maybe don't do timeouts, but instead simply reconnect when a new connection is detected to be pending)
+ -> no timeouts, simply connect whenever there is a new client
  -handle reconnecting with new client (ogl_engine restarted is a new client) (old data has to be freed)
+ -> after client disconnected, the data stays onscreen
+ -> all done, worked flawlessly
+ 
+TODO
+-FEATURES:
  
  stream the data and automaticly set the view position and size
  

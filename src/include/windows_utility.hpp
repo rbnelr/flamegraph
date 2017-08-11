@@ -26,11 +26,11 @@ namespace win32 {
 	
 	DECL void close_handle (HANDLE obj) {
 		auto ret = CloseHandle(obj);
-		assert(ret != 0);
+		if (ret == 0) warning("CloseHandle(%) failed", obj);
 	}
 	DECL void reset_event (HANDLE obj) {
 		auto ret = ResetEvent(obj);
-		assert(ret != 0);
+		if (ret == 0) warning("ResetEvent(%) failed", obj);
 	}
 	
 	DECL err_e create_file (char const* filename, HANDLE* out_h, DWORD acc, DWORD share, DWORD mode) {
@@ -100,9 +100,12 @@ namespace win32 {
 			filepath[0] = '\0';
 #else
 	#define GET_FILEPATH_FROM_HANDLE(h) \
-			char filepath[MAX_PATH]; \
-			filepath[0] = '\0'; \
-			GetFinalPathNameByHandleA(h, filepath, MAX_PATH -1, 0) // Msdn says somthing about cchFilePath being without the terminator, but their example simply passes MAX_PATH, pass MAX_PATH -1 for in case anyway
+			char filepath[MAX_PATH] = "<INVALID_HANDLE_VALUE>"; \
+			if (h != INVALID_HANDLE_VALUE) { \
+				filepath[0] = '\0'; \
+				GetFinalPathNameByHandleA(h, filepath, MAX_PATH -1, 0); \
+			}
+			// Msdn says somthing about cchFilePath being without the terminator, but their example simply passes MAX_PATH, pass MAX_PATH -1 for in case anyway
 			// ignore return value
 #endif
 	

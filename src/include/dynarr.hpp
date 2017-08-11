@@ -50,8 +50,8 @@ template <typename T, typename LEN_T=u32>
 struct dynarr : public array<T, LEN_T> { // 'this->' everywhere to fix 'lookup into dependent bases' problem
 	LEN_T	cap;
 	
-	DECLM void init (LEN_T init_len, LEN_T init_cap);
-	DECLM void init (LEN_T init_cap);
+	DECLM void alloc (LEN_T init_len, LEN_T init_cap);
+	DECLM void alloc (LEN_T init_cap);
 	
 	constexpr dynarr (T* p, LEN_T l, LEN_T c): array<T, LEN_T>{p, l}, cap{c} {}
 	
@@ -62,10 +62,10 @@ struct dynarr : public array<T, LEN_T> { // 'this->' everywhere to fix 'lookup i
 	//#endif
 	
 	dynarr (LEN_T init_len, LEN_T init_cap) {
-		init(init_len, init_cap);
+		alloc(init_len, init_cap);
 	}
 	dynarr (LEN_T init_cap) {
-		init(init_cap);
+		alloc(init_cap);
 	}
 	
 	DECLM void free ();
@@ -101,13 +101,18 @@ struct dynarr : public array<T, LEN_T> { // 'this->' everywhere to fix 'lookup i
 		_resize_cap( this->len );
 	}
 	
-	DECLM void clear (LEN_T reset_len, LEN_T reset_cap) {
+	DECLM void clear (LEN_T reset_len, LEN_T reset_cap) { // Can be called instead of alloc()
 		
-		this->len = reset_len;
-		assert(reset_cap >= reset_len);
-		cap = reset_cap;
-		
-		fit_cap();
+		if (this->arr) {
+			
+			this->len = reset_len;
+			assert(reset_cap >= reset_len);
+			cap = reset_cap;
+			
+			fit_cap();
+		} else {
+			alloc(reset_len, reset_cap);
+		}
 	}
 	
 	DECLM T* grow_to (LEN_T new_len) {

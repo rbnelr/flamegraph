@@ -125,6 +125,8 @@ namespace streaming {
 				client_ip.set(&addr);
 			}
 			
+			// TODO: is it valid to change buffer size after accept() (since there might already be data in the buffer)
+			//        how would i do it before accept() ? does setting the SO_RCVBUF of the listen_sock set the default of all created sockets?
 			{ // Set recieve buffer to large value for good measure
 				int size = mebi<int>(1);
 				{
@@ -171,7 +173,7 @@ namespace streaming {
 			
 		}
 		
-		#if 0
+		#if 1
 		int pollerr =		POLLERR;
 		int pollhup =		POLLHUP;
 		int pollnval =		POLLNVAL;
@@ -194,16 +196,20 @@ namespace streaming {
 				return false;
 				
 			} else if (	ret == 1 ) {
+				// POLLRDNORM			-> data available
+				// POLLRDNORM|POLLHUP	-> data available (also disconnected, but lets read the last data chunk first)
+				// POLLHUP				-> disconnected, let's do enter disconnected state
 				
 				if (fd.revents == POLLHUP) {
 					print(">>> Client %.%.%.%:% disconnected gracefully.\n", _IP_PRINT(client_ip));
-					//assert(false, "WSAPoll: connection close [revents == POLLERR|POLLHUP]");
+					
 					connected = false;
 					return false;
 				}
 				
-				assert(fd.revents & POLLRDNORM, "%", hex(fd.revents));
-				return true;
+				if (!(fd.revents & POLLRDNORM)) warning("%", hex(fd.revents));
+				
+				return fd.revents & POLLRDNORM;
 				
 			} else {
 				assert(false, "%", ret);
@@ -256,6 +262,21 @@ namespace streaming {
 						assert(serv_sock != INVALID_SOCKET);
 					}
 					
+					{ // Set send buffer size to a large value to avoid stalls if the flamegraph app is not frequently enough (slow framerate)
+						int size = mebi<int>(1);
+						{
+							int size_sz = sizeof(size);
+							auto ret = setsockopt(serv_sock, SOL_SOCKET, SO_SNDBUF, (char*)&size, size_sz);
+							assert(ret == 0, "% [%]", ret, WSAGetLastError());
+						}
+						{
+							int size_sz = sizeof(size);
+							auto ret = getsockopt(serv_sock, SOL_SOCKET, SO_SNDBUF, (char*)&size, &size_sz);
+							assert(ret == 0, "% [%]", ret, WSAGetLastError());
+						}
+						//print(">>> SO_SNDBUF: %\n", size);
+					}
+					
 					//print(">>> trying to connect to server\n");
 					
 					{
@@ -270,22 +291,11 @@ namespace streaming {
 				
 			}
 			
-			{ // Set send buffer size to a large value to avoid stalls if the flamegraph app is not frequently enough (slow framerate)
-				int size = mebi<int>(1);
-				{
-					int size_sz = sizeof(size);
-					auto ret = setsockopt(serv_sock, SOL_SOCKET, SO_SNDBUF, (char*)&size, size_sz);
-					assert(ret == 0, "% [%]", ret, WSAGetLastError());
-				}
-				{
-					int size_sz = sizeof(size);
-					auto ret = getsockopt(serv_sock, SOL_SOCKET, SO_SNDBUF, (char*)&size, &size_sz);
-					assert(ret == 0, "% [%]", ret, WSAGetLastError());
-				}
-				//print(">>> SO_SNDBUF: %\n", size);
-			}
-			
 			print("Connected to server %:%.\n", server_ip, TO_STR(PROFILE_STREAMING_PORT));
+		}
+		
+		bool connected () {
+			return serv_sock != INVALID_SOCKET;
 		}
 		
 		void disconnect_from_server () {
@@ -298,7 +308,7 @@ namespace streaming {
 		}
 		
 		void write (void* data, u64 size) {
-			if (serv_sock == INVALID_SOCKET) return;
+			assert(serv_sock != INVALID_SOCKET);
 			
 			auto ret = send(serv_sock, (char*)data, safe_cast_assert(int, size), 0);
 			assert(ret != SOCKET_ERROR);
@@ -307,6 +317,7 @@ namespace streaming {
 		}
 		
 		bool poll_write_avail () {
+			assert(serv_sock != INVALID_SOCKET);
 			
 			WSAPOLLFD fd = {};
 			fd.fd =		serv_sock;

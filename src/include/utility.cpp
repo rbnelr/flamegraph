@@ -537,8 +537,8 @@ namespace list_of_files_in_n {
 				filters_len == 0 && filters == nullptr, "Not implemented");
 		
 		Filenames ret;
-		ret.arr		.init(0, 256);
-		ret.str_data.init(0, 256 * 32);
+		ret.arr		.alloc(0, 256);
+		ret.str_data.alloc(0, 256 * 32);
 		
 		auto builder = List_Of_Files_In{flags, filters_len, filters, base_path};
 		builder.recurse(&ret, lstr(""));
