@@ -1625,8 +1625,6 @@ struct Str {
 	u32	len;
 };
 
-DECLD bool				streamed = true;
-
 DECLD u32				chunks_count;
 
 DECLD dynarr<Thread>	threads; // zeroed
@@ -1665,22 +1663,58 @@ DECLM lstr Block::get_name () {
 	return lstr( blocks_str_storage.arr +name_offs, name_len );
 }
 
-DECLD constexpr tv3<GLubyte> COLS[8] = {
-	{192,  26,	26},
-	{ 26, 192,	26},
+#define C cast_v3< tv3<GLubyte> >
+
+DECLD constexpr tv3<GLubyte> COLS[] = {
+	{192,  26,  26},
+	{ 26, 192,  26},
 	{ 26,  26, 192},
-	{192, 192,	26},
+	{192, 192,  26},
 	{ 26, 192, 192},
 	{192,  26, 192},
 	{192,  77, 192},
-	{128, 192,	77},
+	{128, 192,  77},
+	
+	C( v3(192,  26,	 26) * v3(0.8f) ),
+	C( v3( 26, 192,	 26) * v3(0.8f) ),
+	C( v3( 26,  26, 192) * v3(0.8f) ),
+	C( v3(192, 192,	 26) * v3(0.8f) ),
+	C( v3( 26, 192, 192) * v3(0.8f) ),
+	C( v3(192,  26, 192) * v3(0.8f) ),
+	C( v3(192,  77, 192) * v3(0.8f) ),
+	C( v3(128, 192,	 77) * v3(0.8f) ),
+	
+	C( v3(192,  65,	 65) * v3(0.8f) ),
+	C( v3( 65, 192,	 65) * v3(0.8f) ),
+	C( v3( 65,  65, 192) * v3(0.8f) ),
+	C( v3(192, 192,	 65) * v3(0.8f) ),
+	C( v3( 65, 192, 192) * v3(0.8f) ),
+	C( v3(192,  65, 192) * v3(0.8f) ),
+	C( v3(192, 154, 192) * v3(0.8f) ),
+	C( v3(128, 192,	154) * v3(0.8f) ),
 };
 
+#undef C
+
 #include "streaming.hpp"
+#include "hash.hpp"
 
 DECLD streaming::Server		stream;
 
-void stream_connect () {
+bool streamed () {
+	return stream.connected;
+}
+
+DECLD u32				chunk_i;
+DECLD f::Chunk			chunk;
+
+DECLD u64				bytes_recieved_this_frame;
+DECLD u32				chunks_this_frame;
+DECLD u32				STREAM_MAX_CHUNKS_PER_FRAME =		32;
+
+void profile_data_init () {
+	
+	chunk_i = 0;
 	
 	f::File_Header f_header;
 	stream.read(&f_header, sizeof(f_header));
@@ -1696,7 +1730,7 @@ void stream_connect () {
 	
 	stream.read(remain_header, remain_header_size);
 	
-	if (streamed) {
+	if (streamed()) {
 		assert(f_header.total_event_count == 0);
 		assert(f_header.chunks_count == 0);
 	}
@@ -1755,20 +1789,13 @@ void at_init () {
 	stream.start();
 }
 
-DECLD u32				chunk_i = 0;
-DECLD f::Chunk			chunk;
-
-DECLD u64				bytes_recieved_this_frame;
-DECLD u32				chunks_this_frame;
-DECLD u32				STREAM_MAX_CHUNKS_PER_FRAME =		32;
-
 void every_frame () {
 	
 	bytes_recieved_this_frame = 0;
 	
 	if (stream.client_pending()) {
 		stream.connect_to_client();
-		stream_connect();
+		profile_data_init();
 	} else {
 		if (!stream.connected) {
 			return;
@@ -1777,7 +1804,7 @@ void every_frame () {
 	
 	for (chunks_this_frame=0;; ++chunks_this_frame) {
 		
-		if (streamed) {
+		if (streamed()) {
 			bool avail = stream.poll_read_avail();
 			
 			if ( !avail || chunks_this_frame == STREAM_MAX_CHUNKS_PER_FRAME ) break;
@@ -1878,7 +1905,9 @@ void every_frame () {
 				
 				data[cur] = {}; // zero potential padding
 				
-				auto col = COLS[ i % arrlenof(COLS) ];
+				lstr name = n.get_name();
+				
+				auto col = COLS[ (hash::hash(name) +n.index) % arrlenof(COLS) ];
 				if (n.flags & BT_WAIT) {
 					col = tv3<GLubyte>(120, 120, 120);
 				}
@@ -1916,8 +1945,19 @@ DECLD constexpr f64		THRP_EXP_MOVING_AVG_ALPHA =	1.0 / 8.0;
 
 DECLD bool				dragging_view = false;
 DECLD f32				view_drag_grab_pos;
-DECLD f32				view_pos_sec_to_pix =		0.0f; // sec-space pos of left screen edge
-DECLD f32				view_scale_sec_to_pix =		1000.0f; // pixels per sec
+
+struct View_Pos {
+	f32					pos_sec_to_pix; // sec-space pos of left screen edge
+	f32					scale_sec_to_pix; // pixels per sec
+};
+DECLD View_Pos			view[2] = {
+	{	0.0f,
+		1920.0f / 2.0f,
+	},
+	{	0.0f,
+		1920.0f / 0.020f,
+	}
+};
 
 DECLD f32				select_pos =				0.0f; // sec
 DECLD f32				diff_select_pos =			0.0f; // sec
@@ -2127,58 +2167,69 @@ void frame () {
 		}
 	}
 	
-	f32 dragged_view_pos;
+	f32 view_pos;
+	f32 view_scale;
 	{
-		f32 mouse_pos_pixel_center = (f32)sinp.mouse_cursor_pos.x +0.5f;
-		f32 old_view_scale = view_scale_sec_to_pix; // time-unit-space, but relative to left screen edge
+		auto& v = view[streamed() && chunk_i != 0 ? 1 : 0];
 		
-		if (sinp.mouse_cursor_in_window) {
-			f32 log_space = fp::log(view_scale_sec_to_pix);
-			log_space += (f32)inp.mouse_wheel_accum * 0.0625f;
-			view_scale_sec_to_pix = fp::exp(log_space);
-		}
-		
-		f32 new_scaled_mouse_pos = mouse_pos_pixel_center / view_scale_sec_to_pix; // time-unit-space, but relative to left screen edge
-		
-		dragged_view_pos = view_pos_sec_to_pix;
-		
-		if (!dragging_view) {
-			if (inp.rmb_down && sinp.mouse_cursor_in_window) {
-				//assert(inp.rmb_count > 0); // button went down
-				
-				view_drag_grab_pos = new_scaled_mouse_pos;
-				dragging_view = true;
-			} else {
-				f32 old_scaled_mouse_pos = mouse_pos_pixel_center / old_view_scale; // time-unit-space, but relative to left screen edge
-				dragged_view_pos -= new_scaled_mouse_pos -old_scaled_mouse_pos; // make scaling centered around mouse position
-				view_pos_sec_to_pix = dragged_view_pos;
-			}
-		} else {
-			dragged_view_pos -= new_scaled_mouse_pos -view_drag_grab_pos;
-			if (!inp.rmb_down) {
-				assert(inp.rmb_count > 0); // button went up
-				
-				view_pos_sec_to_pix = dragged_view_pos; // apply the dragging
-				dragging_view = false;
-			}
-		}
-		
+		f32 dragged_view_pos;
 		{
-			std140_View temp;
-			temp.view_pos_sec_to_pix.set( dragged_view_pos );
-			temp.view_scale_sec_to_pix.set( view_scale_sec_to_pix );
+			f32 mouse_pos_pixel_center = (f32)sinp.mouse_cursor_pos.x +0.5f;
+			f32 old_view_scale = v.scale_sec_to_pix; // time-unit-space, but relative to left screen edge
 			
-			glBufferSubData(GL_UNIFORM_BUFFER,
-					offsetof(std140_Global, view_pos_sec_to_pix),
-					sizeof temp, &temp);
+			if (sinp.mouse_cursor_in_window) {
+				f32 log_space = fp::log(v.scale_sec_to_pix);
+				log_space += (f32)inp.mouse_wheel_accum * 0.0625f;
+				v.scale_sec_to_pix = fp::exp(log_space);
+			}
+			view_scale = v.scale_sec_to_pix;
+			
+			f32 new_scaled_mouse_pos = mouse_pos_pixel_center / v.scale_sec_to_pix; // time-unit-space, but relative to left screen edge
+			
+			dragged_view_pos = v.pos_sec_to_pix;
+			
+			if (!dragging_view) {
+				if (inp.rmb_down && sinp.mouse_cursor_in_window) {
+					//assert(inp.rmb_count > 0); // button went down
+					
+					view_drag_grab_pos = new_scaled_mouse_pos;
+					dragging_view = true;
+				} else {
+					f32 old_scaled_mouse_pos = mouse_pos_pixel_center / old_view_scale; // time-unit-space, but relative to left screen edge
+					dragged_view_pos -= new_scaled_mouse_pos -old_scaled_mouse_pos; // make scaling centered around mouse position
+					v.pos_sec_to_pix = dragged_view_pos;
+				}
+			} else {
+				dragged_view_pos -= new_scaled_mouse_pos -view_drag_grab_pos;
+				if (!inp.rmb_down) {
+					assert(inp.rmb_count > 0); // button went up
+					
+					v.pos_sec_to_pix = dragged_view_pos; // apply the dragging
+					dragging_view = false;
+				}
+			}
+		}
+		view_pos = dragged_view_pos;
+		
+		if (streamed() && chunk_i != 0) {
+			view_pos = view_pos +((f32)chunk.ts_begin * threads[0].unit_to_sec); // TODO:
 		}
 		
-		//print("dragged_view_pos: % view_scale_sec_to_pix: %\n", dragged_view_pos, view_scale_sec_to_pix);
+	}
+	
+	{
+		std140_View temp;
+		temp.view_pos_sec_to_pix.set( view_pos );
+		temp.view_scale_sec_to_pix.set( view_scale );
+		
+		glBufferSubData(GL_UNIFORM_BUFFER,
+				offsetof(std140_Global, view_pos_sec_to_pix),
+				sizeof temp, &temp);
 	}
 	
 	{
 		if (inp.lmb_down && sinp.mouse_cursor_in_window) {
-			auto pos = view_pos_sec_to_pix +((sinp.mouse_cursor_pos.x +0.5f) / view_scale_sec_to_pix); // click pixel center
+			auto pos = view_pos +((sinp.mouse_cursor_pos.x +0.5f) / view_scale); // click pixel center
 			if (!inp.ctrl_down) {
 				select_pos = pos;
 			} else {
@@ -2298,7 +2349,7 @@ void frame () {
 		DEFER_POP(&working_stk);
 		
 		{
-			GLint x = (GLint)((0.0f -dragged_view_pos) * view_scale_sec_to_pix) +4;
+			GLint x = (GLint)((0.0f -view_pos) * view_scale) +4;
 			
 			draw_text_line(tv2<GLint>(x, lowerleft_lines_y(0) +4), "0 ms");
 		}
@@ -2307,7 +2358,7 @@ void frame () {
 			
 			lstr str = print_working_stk("%%", t.val,t.unit);
 			
-			GLint x = (GLint)((select_pos -dragged_view_pos) * view_scale_sec_to_pix) +4;
+			GLint x = (GLint)((select_pos -view_pos) * view_scale) +4;
 			
 			draw_text_line(tv2<GLint>(x, lowerleft_lines_y(1) +4), str);
 		}
@@ -2316,7 +2367,7 @@ void frame () {
 			
 			lstr str = print_working_stk("%%", t.val,t.unit);
 			
-			GLint x = (GLint)((diff_select_pos -dragged_view_pos) * view_scale_sec_to_pix);
+			GLint x = (GLint)((diff_select_pos -view_pos) * view_scale);
 			x -= (safe_cast_assert(GLint, str.len) * GLYPH_DIM.x) +4;
 			
 			draw_text_line(tv2<GLint>(x, lowerleft_lines_y(2) +4), str);
@@ -2328,7 +2379,7 @@ void frame () {
 			
 			lstr str = print_working_stk("%%", t.val,t.unit);
 			
-			GLint x = (GLint)((diff_select_pos -dragged_view_pos) * view_scale_sec_to_pix) +4;
+			GLint x = (GLint)((diff_select_pos -view_pos) * view_scale) +4;
 			
 			draw_text_line(tv2<GLint>(x, lowerleft_lines_y(2) +4), str);
 		}
@@ -2336,34 +2387,46 @@ void frame () {
 	
 	{ // Graph tool frame timings text draw
 		
-		if (frame_number == 1) {
-			dt_exp_moving_avg = time::cpu_qpc_prev_frame_ms;
-		} else if (frame_number > 1) {
-			dt_exp_moving_avg = (time::cpu_qpc_prev_frame_ms * DT_EXP_MOVING_AVG_ALPHA)
-					+(dt_exp_moving_avg * (1.0 -DT_EXP_MOVING_AVG_ALPHA));
+		{
+			if (frame_number == 1) {
+				dt_exp_moving_avg = time::cpu_qpc_prev_frame_ms;
+			} else if (frame_number > 1) {
+				dt_exp_moving_avg = (time::cpu_qpc_prev_frame_ms * DT_EXP_MOVING_AVG_ALPHA)
+						+(dt_exp_moving_avg * (1.0 -DT_EXP_MOVING_AVG_ALPHA));
+			}
+			
+			if (frame_number == 0) {
+				thrp_exp_moving_avg = (f64)bytes_recieved_this_frame;
+			} else if (frame_number > 0) {
+				thrp_exp_moving_avg = ((f64)bytes_recieved_this_frame * THRP_EXP_MOVING_AVG_ALPHA)
+						+(thrp_exp_moving_avg * (1.0 -THRP_EXP_MOVING_AVG_ALPHA));
+			}
+			units::Throughput thrp(thrp_exp_moving_avg);
+			
+			u64 blocks = 0;
+			for (u32 i=0; i<threads.len; ++i) {
+				blocks += threads[i].buffered_count;
+			}
+			units::Bytes vbo_b(blocks * sizeof(std140_Bar));
+			
+			lstr str = print_working_stk("frame#%, prev_dt: %|% ms  %% |% chunks: % total blocks: % VBO size: %%",
+						frame_number, dt_exp_moving_avg, time::cpu_qpc_prev_frame_ms,
+						thrp.val,thrp.unit, bytes_recieved_this_frame, chunks_this_frame, blocks, vbo_b.val,vbo_b.unit);
+			
+			//print(">>> %\n", str);
+			
+			draw_text_line(upperleft_lines(0), str);
 		}
 		
-		if (frame_number == 0) {
-			thrp_exp_moving_avg = (f64)bytes_recieved_this_frame;
-		} else if (frame_number > 0) {
-			thrp_exp_moving_avg = ((f64)bytes_recieved_this_frame * THRP_EXP_MOVING_AVG_ALPHA)
-					+(thrp_exp_moving_avg * (1.0 -THRP_EXP_MOVING_AVG_ALPHA));
+		{
+			lstr str;
+			if (!stream.connected) {
+				str = "not connected";
+			} else {
+				str = print_working_stk("connected to client [%.%.%.%:%]", _IP_PRINT(stream.client_ip));
+			}
+			draw_text_line(upperleft_lines(1), str);
 		}
-		units::Throughput thrp(thrp_exp_moving_avg);
-		
-		u64 blocks = 0;
-		for (u32 i=0; i<threads.len; ++i) {
-			blocks += threads[i].buffered_count;
-		}
-		units::Bytes vbo_b(blocks * sizeof(std140_Bar));
-		
-		lstr str = print_working_stk("frame#%, prev_dt: %|% ms  %% |% chunks: % total blocks: % VBO size: %%",
-					frame_number, dt_exp_moving_avg, time::cpu_qpc_prev_frame_ms,
-					thrp.val,thrp.unit, bytes_recieved_this_frame, chunks_this_frame, blocks, vbo_b.val,vbo_b.unit);
-		
-		//print(">>> %\n", str);
-		
-		draw_text_line(upperleft_lines(0), str);
 	}
 	
 }

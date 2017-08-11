@@ -148,10 +148,14 @@ https://www.youtube.com/watch?v=Rq3PYO0TrjE
  -> after client disconnected, the data stays onscreen
  -> all done, worked flawlessly
  
+ stream the data and automaticly set the view position and size
+ 
 TODO
 -FEATURES:
  
- stream the data and automaticly set the view position and size
+ try to keep colors non-epilepsy inducing
+ -(How should i use colors on bars on unstable data?)
+  -i maybe could give colors based on the name of blocks and their numbers (rng based on name string, and use index to cycle though colors like currently)
  
  add selecting of bars
  

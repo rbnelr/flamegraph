@@ -405,56 +405,56 @@ using vec_op::distance;
 
 namespace vec_util {
 	// Asserted cast
-	template<typename T_CAST, typename T>	DECL_ T_CAST safe_cast_assert_v2 (T x, T y) {
+	template<typename T_CAST, typename T>	DECL_ constexpr T_CAST safe_cast_assert_v2 (T x, T y) {
 		return T_CAST(	safe_cast_assert(typename T_CAST::t, x),
 						safe_cast_assert(typename T_CAST::t, y) );
 	}
-	template<typename T_CAST, typename T>	DECL_ T_CAST safe_cast_assert_v3 (T x, T y, T z) {
+	template<typename T_CAST, typename T>	DECL_ constexpr T_CAST safe_cast_assert_v3 (T x, T y, T z) {
 		return T_CAST(	safe_cast_assert(typename T_CAST::t, x),
 						safe_cast_assert(typename T_CAST::t, y),
 						safe_cast_assert(typename T_CAST::t, z) );
 	}
-	template<typename T_CAST, typename T>	DECL_ T_CAST safe_cast_assert_v4 (T x, T y, T z, T w) {
+	template<typename T_CAST, typename T>	DECL_ constexpr T_CAST safe_cast_assert_v4 (T x, T y, T z, T w) {
 		return T_CAST(	safe_cast_assert(typename T_CAST::t, x),
 						safe_cast_assert(typename T_CAST::t, y),
 						safe_cast_assert(typename T_CAST::t, z),
 						safe_cast_assert(typename T_CAST::t, w) );
 	}
 	
-	template<typename T_CAST, typename T>	DECL_ T_CAST safe_cast_assert_v2 (T vp v) {
+	template<typename T_CAST, typename T>	DECL_ constexpr T_CAST safe_cast_assert_v2 (T vp v) {
 		return safe_cast_assert_v2<T_CAST>(v.x, v.y);
 	}
-	template<typename T_CAST, typename T>	DECL_ T_CAST safe_cast_assert_v3 (T vp v) {
+	template<typename T_CAST, typename T>	DECL_ constexpr T_CAST safe_cast_assert_v3 (T vp v) {
 		return safe_cast_assert_v3<T_CAST>(v.x, v.y, v.z);
 	}
-	template<typename T_CAST, typename T>	DECL_ T_CAST safe_cast_assert_v4 (T vp v) {
+	template<typename T_CAST, typename T>	DECL_ constexpr T_CAST safe_cast_assert_v4 (T vp v) {
 		return safe_cast_assert_v4<T_CAST>(v.x, v.y, v.z, v.w);
 	}
 	
 	// Unasserted cast
-	template<typename T_CAST, typename T>	DECL_ T_CAST cast_v2 (T x, T y) {
+	template<typename T_CAST, typename T>	DECL_ constexpr T_CAST cast_v2 (T x, T y) {
 		return T_CAST(	(typename T_CAST::t)x,
 						(typename T_CAST::t)y );
 	}
-	template<typename T_CAST, typename T>	DECL_ T_CAST cast_v3 (T x, T y, T z) {
+	template<typename T_CAST, typename T>	DECL_ constexpr T_CAST cast_v3 (T x, T y, T z) {
 		return T_CAST(	(typename T_CAST::t)x,
 						(typename T_CAST::t)y,
 						(typename T_CAST::t)z );
 	}
-	template<typename T_CAST, typename T>	DECL_ T_CAST cast_v4 (T x, T y, T z, T w) {
+	template<typename T_CAST, typename T>	DECL_ constexpr T_CAST cast_v4 (T x, T y, T z, T w) {
 		return T_CAST(	(typename T_CAST::t)x,
 						(typename T_CAST::t)y,
 						(typename T_CAST::t)z,
 						(typename T_CAST::t)w );
 	}
 	
-	template<typename T_CAST, typename T>	DECL_ T_CAST cast_v2 (T vp v) {
+	template<typename T_CAST, typename T>	DECL_ constexpr T_CAST cast_v2 (T vp v) {
 		return cast_v2<T_CAST>(v.x, v.y);
 	}
-	template<typename T_CAST, typename T>	DECL_ T_CAST cast_v3 (T vp v) {
+	template<typename T_CAST, typename T>	DECL_ constexpr T_CAST cast_v3 (T vp v) {
 		return cast_v3<T_CAST>(v.x, v.y, v.z);
 	}
-	template<typename T_CAST, typename T>	DECL_ T_CAST cast_v4 (T vp v) {
+	template<typename T_CAST, typename T>	DECL_ constexpr T_CAST cast_v4 (T vp v) {
 		return cast_v4<T_CAST>(v.x, v.y, v.z, v.w);
 	}
 	

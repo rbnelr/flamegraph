@@ -173,7 +173,7 @@ namespace streaming {
 			
 		}
 		
-		#if 1
+		#if 0
 		int pollerr =		POLLERR;
 		int pollhup =		POLLHUP;
 		int pollnval =		POLLNVAL;
@@ -221,7 +221,8 @@ namespace streaming {
 	};
 	
 	struct Client {
-		SOCKET serv_sock;
+		SOCKET	serv_sock;
+		bool	connected;
 		
 		void connect_to_server () {
 			cstr server_ip;
@@ -232,6 +233,7 @@ namespace streaming {
 					server_ip = "127.0.0.1";
 				}
 			}
+			connected = false;
 			
 			{
 				addrinfo hints = {}; // zero
@@ -287,15 +289,15 @@ namespace streaming {
 							serv_sock = INVALID_SOCKET;
 						}
 					}
+					
 				}
 				
 			}
 			
-			print("Connected to server %:%.\n", server_ip, TO_STR(PROFILE_STREAMING_PORT));
-		}
-		
-		bool connected () {
-			return serv_sock != INVALID_SOCKET;
+			if (serv_sock != INVALID_SOCKET) {
+				connected = true;
+				print("Connected to server %:%.\n", server_ip, TO_STR(PROFILE_STREAMING_PORT));
+			}
 		}
 		
 		void disconnect_from_server () {
@@ -303,12 +305,13 @@ namespace streaming {
 			auto ret = closesocket(serv_sock);
 			if (ret != 0) warning("closesocket() failed % [%]", ret, WSAGetLastError());
 			
+			connected = false;
 			print("Disconnected from server.\n");
 			
 		}
 		
 		void write (void* data, u64 size) {
-			assert(serv_sock != INVALID_SOCKET);
+			assert(connected);
 			
 			auto ret = send(serv_sock, (char*)data, safe_cast_assert(int, size), 0);
 			assert(ret != SOCKET_ERROR);
@@ -317,7 +320,7 @@ namespace streaming {
 		}
 		
 		bool poll_write_avail () {
-			assert(serv_sock != INVALID_SOCKET);
+			assert(connected);
 			
 			WSAPOLLFD fd = {};
 			fd.fd =		serv_sock;
@@ -331,8 +334,8 @@ namespace streaming {
 				
 			} else if (	ret == 1 ) {
 				
-				if (fd.revents == (POLLERR|POLLHUP)) {
-					assert(false, "WSAPoll: connection close [revents == POLLERR|POLLHUP]");
+				if (fd.revents & POLLHUP) {
+					connected = false;
 					return false;
 				}
 				
