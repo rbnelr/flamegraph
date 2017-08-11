@@ -153,6 +153,10 @@ https://www.youtube.com/watch?v=Rq3PYO0TrjE
 TODO
 -FEATURES:
  
+ I am currently not delaying the opengl timer queries, at all, so it might be that i am syncronizing the cpu's frame begin to the prev frame end on the gpu (cpu stalls in a funcion called after SwapBuffers, because it has to wait for gpu timer data)
+ -> visual inspection in the frame mode flamegraph, also seems to suggest that
+ -> a test without vsync, strongly suggest that this syncronization is happening, process_chunk() always finishes somewhere in the range of ~200us after "SwapBuffers" block finishes on the gpu
+ 
  try to keep colors non-epilepsy inducing
  -(How should i use colors on bars on unstable data?)
   -i maybe could give colors based on the name of blocks and their numbers (rng based on name string, and use index to cycle though colors like currently)

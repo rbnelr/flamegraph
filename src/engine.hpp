@@ -1831,6 +1831,8 @@ void every_frame () {
 					chunk_name, chunk.index, chunk.chunk_size, chunk.event_count);
 		}
 		
+		threads[0].open(chunk_name, chunk.index, chunk.ts_begin); // TODO:
+		
 		auto* event = (f::Event*)(chunk_name.str +chunk_name.len +1);
 		
 		for (u32 i=0; i<chunk.event_count; ++i) {
@@ -1855,6 +1857,8 @@ void every_frame () {
 			
 			event = (f::Event*)(code_name.str +code_name.len +1);
 		}
+		
+		threads[0].close(chunk_name, chunk.index, chunk.ts_begin +chunk.ts_length); // TODO:
 		
 		++chunk_i;
 		
@@ -1908,7 +1912,7 @@ void every_frame () {
 				lstr name = n.get_name();
 				
 				auto col = COLS[ (hash::hash(name) +n.index) % arrlenof(COLS) ];
-				if (n.flags & BT_WAIT) {
+				if ((n.flags & BT_WAIT) || (thread_i == 0 && n.depth == 0)) { // TODO:
 					col = tv3<GLubyte>(120, 120, 120);
 				}
 				
