@@ -900,6 +900,9 @@ namespace mat {
 						0, 0, 1,
 						0, 0, 0 );
 		}
+		static constexpr CHECK_RESULT thm all (T val) {
+			return thm(hv_t(val), hv_t(val), hv_t(val), hv_t(val));
+		}
 		
 		// Set all values at once in column/row order
 		static constexpr CHECK_RESULT thm column (	hv_t vp a, hv_t vp b, hv_t vp c, hv_t vp d ) {

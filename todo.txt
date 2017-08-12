@@ -150,16 +150,18 @@ https://www.youtube.com/watch?v=Rq3PYO0TrjE
  
  stream the data and automaticly set the view position and size
  
-TODO
--FEATURES:
- 
  I am currently not delaying the opengl timer queries, at all, so it might be that i am syncronizing the cpu's frame begin to the prev frame end on the gpu (cpu stalls in a funcion called after SwapBuffers, because it has to wait for gpu timer data)
  -> visual inspection in the frame mode flamegraph, also seems to suggest that
  -> a test without vsync, strongly suggest that this syncronization is happening, process_chunk() always finishes somewhere in the range of ~200us after "SwapBuffers" block finishes on the gpu
+ -> added a ad-hoc 1 frame delay, can't see a sync problem now, we were clearly stalling the cpu, although not by that much (with vsync on) -> if we were using the 16.667 ms of the frame fully this might be a large bottleneck
  
  try to keep colors non-epilepsy inducing
  -(How should i use colors on bars on unstable data?)
   -i maybe could give colors based on the name of blocks and their numbers (rng based on name string, and use index to cycle though colors like currently)
+ -> did that used a hash off the internet on the name string and added the index to it
+  
+TODO
+-FEATURES:
  
  add selecting of bars
  

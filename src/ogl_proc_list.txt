@@ -8,6 +8,8 @@ glBindSampler
 glBindFramebuffer
 glBindRenderbuffer
 glBlitFramebuffer
+glMapBuffer
+glUnmapBuffer
 glGetTexImage
 glQueryCounter
 

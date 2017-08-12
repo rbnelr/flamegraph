@@ -202,7 +202,10 @@ namespace streaming {
 				
 				if (fd.revents == POLLHUP) {
 					print(">>> Client %.%.%.%:% disconnected gracefully.\n", _IP_PRINT(client_ip));
-					
+					connected = false;
+					return false;
+				} else if (fd.revents == (POLLHUP|POLLERR)) {
+					print(">>> Client %.%.%.%:% connection was broken somehow (POLLHUP|POLLERR).\n", _IP_PRINT(client_ip));
 					connected = false;
 					return false;
 				}
