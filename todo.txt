@@ -167,6 +167,8 @@ TODO
  
  float precision issues already show up when zoomed in at uncontended mutex scales when away from the origin by a second
  -should probably turn time units into u64 for bar pos/len and u64+float fract for view/selection/etc. coords
+ ->>> at timescales of a few minutes single precision float has gaps of 10s of us, which is could already make some blocks very inprecise
+ -fix this.
  
  add time scale reference at the bottom or top (black-white stripes that are 1 sec/ms/us/ns long) as scale reference
  -somehow fade between the scales (scaling in at 1 sec scale fades in the marks for ms)

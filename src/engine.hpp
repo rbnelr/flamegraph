@@ -1326,7 +1326,7 @@ DECLD constexpr	u32				BLOCKS_DYNARR_CAP =			_CAP(16 * 1024); // per thread
 DECLD constexpr	u32				UNIQUE_BLOCKS_DYNARR_CAP =	_CAP(256);
 DECLD constexpr	u32				BLOCKS_STR_TABLE_CAP =		_CAP(4096);
 
-DECLD constexpr u32				BLOCKS_PER_VBO =			kibi(128);
+DECLD constexpr u32				BLOCKS_PER_VBO =			kibi(64); // 128
 DECLD constexpr u32				GL_BUF_CAP =				_CAP(64);
 
 DECLD GLuint					VBOs[VBO_COUNT];
@@ -1708,6 +1708,8 @@ bool streamed () {
 DECLD u32				chunk_i;
 DECLD f::Chunk			chunk;
 
+DECLD f32				frame_view_sync_point;
+
 DECLD u64				bytes_recieved_this_frame;
 DECLD u32				chunks_this_frame;
 DECLD u32				STREAM_MAX_CHUNKS_PER_FRAME =		32;
@@ -1846,6 +1848,10 @@ void every_frame () {
 			char action =				code_name.str[0];
 			lstr name =					lstr(&code_name.str[1], code_name.len -1);
 			
+			if (event->thread_indx == 1 && str::comp(code_name, "{engine_frame")) {
+				frame_view_sync_point = (f32)event->ts * thr->unit_to_sec;
+			}
+			
 			//print(" %  % % %\n", i, code_name, event->index, event->ts);
 			
 			switch (action) {
@@ -1859,6 +1865,8 @@ void every_frame () {
 		}
 		
 		threads[0].close(chunk_name, chunk.index, chunk.ts_begin +chunk.ts_length); // TODO:
+		
+		//frame_view_sync_point = (f32)chunk.ts_begin * threads[0].unit_to_sec;
 		
 		++chunk_i;
 		
@@ -2122,7 +2130,9 @@ void draw_all_blocks_instanced (GLsizei gl_count) {
 						sizeof temp, &temp);
 		}
 		
-		for (u32 buf_i=0; buf_i<thr.gl_bufs.len; ++buf_i) {
+		//for (u32 buf_i=0; buf_i<thr.gl_bufs.len; ++buf_i)
+		if (thr.gl_bufs.len > 0) {
+			u32 buf_i = thr.gl_bufs.len-1;
 			
 			glBindVertexArray(thr.gl_bufs[buf_i].VAO);
 			
@@ -2216,7 +2226,7 @@ void frame () {
 		view_pos = dragged_view_pos;
 		
 		if (streamed() && chunk_i != 0) {
-			view_pos = view_pos +((f32)chunk.ts_begin * threads[0].unit_to_sec); // TODO:
+			view_pos = view_pos +frame_view_sync_point; // TODO:
 		}
 		
 	}
