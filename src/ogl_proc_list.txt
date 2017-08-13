@@ -18,6 +18,7 @@ glClear
 glDrawArrays
 glDrawElementsBaseVertex
 glDrawArraysInstanced
+glDrawElementsInstancedBaseVertex
 # 
 glEnable
 glDisable
@@ -78,9 +79,13 @@ glUniform1i
 glUniform1ui
 glUniform1f
 glUniform2f
+glUniform2uiv
 glUniform3f
 glUniform2fv
 glUniform3fv
+glUniformMatrix2fv
+glUniformMatrix3fv
+glUniformMatrix4fv
 glGenQueries
 glGetQueryObjectui64v
 glGetQueryObjectiv

@@ -287,7 +287,7 @@ namespace streaming {
 					{
 						auto ret = connect(serv_sock, result->ai_addr, result->ai_addrlen);
 						if (ret == SOCKET_ERROR) {
-							warning("Cannot connect to server %:% [%]",
+							print("Cannot connect to server %:% [%], not streaming profiling data.\n",
 									server_ip, TO_STR(PROFILE_STREAMING_PORT), WSAGetLastError());
 							serv_sock = INVALID_SOCKET;
 						}

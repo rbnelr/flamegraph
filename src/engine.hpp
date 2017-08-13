@@ -1866,7 +1866,7 @@ void every_frame () {
 		
 		threads[0].close(chunk_name, chunk.index, chunk.ts_begin +chunk.ts_length); // TODO:
 		
-		//frame_view_sync_point = (f32)chunk.ts_begin * threads[0].unit_to_sec;
+		frame_view_sync_point = (f32)chunk.ts_begin * threads[0].unit_to_sec;
 		
 		++chunk_i;
 		
